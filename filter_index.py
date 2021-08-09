@@ -97,8 +97,11 @@ if __name__ == '__main__':
     path = r'C:\Users\panton01\Desktop\index.csv'
     filter_conditions = {'brain_region':['bla'], 'treatment':['baseline','vehicle']}
     
+    # load df
+    index_df = load_index(path)
+    
     # filter index based on conditions
-    index_df = load_n_filter(path, filter_conditions)
+    index_df_filt = load_n_filter(path, filter_conditions)
     
 
         
