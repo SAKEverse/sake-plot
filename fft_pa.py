@@ -114,13 +114,13 @@ class Stft:
         input_wave = np.concatenate((input_wave[0: self.overlap_size], input_wave, input_wave[- self.overlap_size:]))
               
         # pre-allocate power matrix    
-        power_matrix = np.zeros([self.f_idx[1] - self.f_idx[0]+1, int((signal_len/self.overlap_size)-2)])
+        power_matrix = np.zeros([self.f_idx[1] - self.f_idx[0]+1, int((signal_len/self.overlap_size + 1))])
         
         # initialise
         cntr = 0;
         
         # loop through signal segments with overlap 
-        for i in range(0, signal_len-2*self.overlap_size, self.overlap_size):  
+        for i in range(0, signal_len + self.overlap_size, self.overlap_size):  
             
            # get segment
            signal = input_wave[i : i + self.winsize]
