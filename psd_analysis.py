@@ -1,160 +1,152 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Aug  6 10:56:55 2021
+Created on Mon Aug  9 13:24:36 2021
 
 @author: panton01
 """
 
 ########## ------------------------------- IMPORTS ------------------------ ##########
-import os
-import adi
 import numpy as np
 import pandas as pd
+from fft_pa import Stft
+from get_data import AdiGet
+from filter_index import load_n_filter
 from beartype import beartype
-from typing import TypeVar
-PandasDf = TypeVar('pandas.core.frame.DataFrame')
 ########## ---------------------------------------------------------------- ##########
 
-class AdiGet:
-    """
-    Class to get data from labchart.
+class GetIndex():
+    "Get index"
     
-    
-    Requires a dictionary with following key/value pairs:
-    
-    -----------------------------------------------------
-    folder_path: str, parent folder
-    file_name: str, file name
-    channel_id:, int: channel id
-    block, int: block number
-    start_time, int: start time in samples for file read
-    stop_time, int:  stop time in samples for file read
-    -----------------------------------------------------
-     
-    """
-    
-    @beartype
-    def __init__(self, propeties:dict):
+    def __init__(self, array):
+        self.array = array
+
+    def find_nearest(self, value):
         """
-        
+        find nearest value in self.array
+
         Parameters
         ----------
-        propeties : dict
+        value : values to search the array for
 
         Returns
         -------
-        None.
-
-        """
+        idx for values
         
-        # get values from dictionary
-        for key, value in propeties.items():
-               setattr(self, key, value)
-       
-        # get load path
-        self.file_path = os.path.join(self.folder_path, self.file_name)
-
-
-    @beartype
-    def get_data_adi(self) -> np.ndarray : 
         """
-        Get data from labchart channel object
+        return (np.abs(self.array - value)).argmin()
 
-        Returns
-        -------
-        np.ndarray: 1D array
+@beartype
+def get_freq_index(freq_vector:np.ndarray, freqs) -> np.ndarray:
+    """
+    Get frequency index
 
-        """
-        
-        # get adi read object
-        fread = adi.read_file(self.file_path)
-        
-        # get channel object
-        ch_obj = fread.channels[self.channel_id]
+    Parameters
+    ----------
+    freq_vector : np.ndarray, frequency vector to be indexed
+    freqs : values to find the index
 
-        # get data 
-        data = ch_obj.get_data(self.block+1, start_sample=self.start_time, stop_sample=self.stop_time)
+    Returns
+    -------
+    np.ndarray
+
+    """
     
-        del fread # delete fread object
-       
-        return data
-        
-        
+    # instantiate
+    f = GetIndex(freq_vector)
+    
+    # vectorize function
+    vfunc = np.vectorize(f.find_nearest)
+
+    # get index 
+    return vfunc(freqs)
+
 @beartype
-def load_index(path:str) -> PandasDf:
+def get_power_area(stft_obj, freqs:np.ndarray, signal:np.ndarray) -> np.ndarray:
     """
-    Load experiment index from csv file
+    Get power area across frequencies
 
     Parameters
     ----------
-    path : str, path to load index
+    stft_obj : stft obj
+    freqs : np.ndarray, 2D array with frequencies, rows = different frequency ranges, colums = [start, stop]
 
     Returns
     -------
-    PandasDf, with experiment index
+    powers : 1D np.array, len = frequency ranges 
 
     """
-    return pd.read_csv(path)
-
-@beartype
-def filter_index(index_df:PandasDf, filter_conditions:dict) -> PandasDf:
-    """
-    Filter index dataframe
-
-    Parameters
-    ----------
-    index_df : PandasDf, dataframe containing experiment index
-    filter_conditions : dict, with keys = columns and values = lists of strings to filter
-
-
-    Returns
-    -------
-    PandasDf, filtered experiment index
-
-    """
-
-    for category, groups in filter_conditions.items():
+    
+    # get frequency index
+    freq_idx = get_freq_index(stft_obj.freq, freqs)
+    
+    # get power matrix
+    pmat = stft_obj.run_stft(signal)
+    
+    # init empty array to store powers
+    powers = np.zeros(freq_idx.shape[0])
+    for i in range(freq_idx.shape[0]):
+        powers[i] = np.sum(pmat[freq_idx[i,0]:freq_idx[i,1],:])
+    
+    return powers
         
-        # create empty index
-        idx = np.zeros(len(index_df), dtype = bool)
-        
-        for value in groups: # iterate over list of strings to filter
-            
-            # or statement between groups of same category
-            idx = (idx) | (index_df[category] == value)
-            
-        # filter signal
-        index_df = index_df[idx]
 
+def add_powers(index_df):
+    
+    fft_duration = 5
+    freq_range = [0.2, 120]
+    freqs = np.array([[0.2,5], [6,12], [15,30], [31,70], [80,120]])
+    
+    # create column names
+    col_names = []
+    for i in range(freqs.shape[0]):
+        col_names.append(str(freqs[i,0]) + ' - ' + str(freqs[i,1]) + ' Hz')
+        
+    # create array for storage
+    power_array = np.empty((len(index_df), freqs.shape[0]))
+    for i in range(len(index_df)): # iterate over dataframe
+        
+        # get properties
+        properties = index_df[AdiGet.input_parameters].loc[i].to_dict()
+        
+        # get signal
+        signal = AdiGet(properties).get_data_adi()
+    
+        # run PSD
+        stft_obj =  Stft(int(index_df['sampling_rate'][i]), fft_duration, freq_range)
+        
+        # get power matrix 
+        power_array[i,:] = get_power_area(stft_obj, freqs, signal)
+    
+    # concatenate to array
+    index_df = pd.concat([index_df, pd.DataFrame(data = power_array, columns = col_names)], axis=1)
+    
     return index_df
-    
+        
+
 
 if __name__ == '__main__':
     
-    path = r'C:\Users\panton01\Desktop\index.csv'
-    filter_conditions = {'brain_region':['bla'], 'treatment':['baseline','vehicle']}
+    # # define path and conditions for filtering
+    # path = r'C:\Users\panton01\Desktop\index.csv'
+    # filter_conditions = {'brain_region':['bla'], 'treatment':['baseline','vehicle']}
     
-    # properties needed to 
-    adi_properties = ['folder_path', 'file_name', 'channel_id', 'block', 'start_time', 'stop_time']
+    # # filter index based on conditions
+    # index_df = load_n_filter(path, filter_conditions)
     
-    # get index
-    index_df = load_index(path)
+    # # add powers
+    # index_df = add_powers(index_df)
     
-    # filter index based on conditions
-    index_df_filt = filter_index(index_df, filter_conditions).reset_index(drop=True)
-    
-    # get data
-    properties = index_df_filt[adi_properties].loc[0].to_dict()
-    signal = AdiGet(properties).get_data_adi()
-    
-    # run PSD
 
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
