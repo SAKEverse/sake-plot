@@ -48,10 +48,10 @@ class Stft:
         self.f_idx = self.get_freq_idx(self.freq_range)
         
         # get frequency vector
-        self.freq = self.freq_vec(self.freq_range)
+        self.freq = self.freq_vec()
         
     @beartype
-    def get_freq_idx(self, f:list) -> list:
+    def get_freq_idx(self, f:list) -> np.ndarray:
         """
         Convert frequency value to frequency index based on sampling rate
 
@@ -65,30 +65,26 @@ class Stft:
 
         """
         
-        freq_idx = np.array(len(f))
+        freq_idx = np.zeros(len(f), dtype = np.int32)
         for i in range(len(f)): 
-            freq_idx[i] = int(f*(self.winsize/self.fs))
+            freq_idx[i] = int(f[i]*(self.winsize/self.fs))
         return freq_idx
     
     @beartype
-    def freq_vec(self, freq_range:list) -> np.ndarray:
+    def freq_vec(self) -> np.ndarray:
         """
         Get frequency vector
 
-        Parameters
-        ----------
-        freq_range : list, containing low frequency and high frequency cutoffs
-
         Returns
         -------
-        np.ndarray, vector with frequencies that matches run_stft spectogram output
+        freq: np.ndarray, vector with frequencies that matches run_stft spectogram output
 
         """
                
         # create frequency array
-        freq = np.linspace(0, int(self.fs*self.overlap), int(round(self.winsize)*self.overlap) + 1)
+        freq = np.arange(self.freq_range[0], self.freq_range[1]+(1/self.win_dur), 1/self.win_dur)
         
-        return freq[self.f_idx[0] : self.f_idx[1]+1]
+        return freq
     
     
     @beartype
@@ -106,20 +102,22 @@ class Stft:
 
         """
 
-        # wave length
-        signal_len = int(len(input_wave) - (len(input_wave) % self.winsize))
-         
-        # initialise
-        cntr = 0;
+        # trim signal if not divisible by window size
+        signal_len = int(len(input_wave) - (len(input_wave) % self.overlap_size))
+        input_wave = input_wave[0:signal_len]
+
         
         # remove dc component
         input_wave = input_wave - np.mean(input_wave)
         
         # pad start and end
-        input_wave = np.concatenate(input_wave[0: self.overlap_size], input_wave, input_wave[- self.overlap_size:])
+        input_wave = np.concatenate((input_wave[0: self.overlap_size], input_wave, input_wave[- self.overlap_size:]))
               
         # pre-allocate power matrix    
         power_matrix = np.zeros([self.f_idx[1] - self.f_idx[0]+1, int((signal_len/self.overlap_size)-2)])
+        
+        # initialise
+        cntr = 0;
         
         # loop through signal segments with overlap 
         for i in range(0, signal_len-2*self.overlap_size, self.overlap_size):  
@@ -137,15 +135,13 @@ class Stft:
            psdx = 2*xdft[0:int(len(xdft)/2+1)]
            
            # get normalised power spectral density
-           power_matrix[:,cntr] = psdx[self.f_idx[0] : self.f_idx[1]]
+           power_matrix[:,cntr] = psdx[self.f_idx[0] : self.f_idx[1]+1]
           
           # update counter
            cntr+=1
 
         return power_matrix
-    
-    
-    
+
     
     
     
