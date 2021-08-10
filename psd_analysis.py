@@ -13,7 +13,7 @@ from stft import Stft
 from get_data import AdiGet
 from filter_index import load_n_filter
 from beartype import beartype
-from typing import TypeVar, Union
+from typing import TypeVar
 PandasDf = TypeVar('pandas.core.frame.DataFrame')
 ########## ---------------------------------------------------------------- ##########
 
@@ -165,6 +165,57 @@ def melted_power_area(index_df:PandasDf, power_df:PandasDf, freqs:list, selected
     return df
 
 
+def melted_psds(index_df:PandasDf, power_df:PandasDf, freq_range:list, selected_categories:list):
+    """
+    Get PSD and melt dataframe for seaborn plotting.
+
+    Parameters
+    ----------
+    index_df : PandasDf, experiment index
+    power_df : PandasDf, contains pmat and frequency vectors for every row of index_df
+    freqs : list, 2D list with frequency ranges for extraction of power area
+    selected_categories : list, columns that will be included in the melted
+
+    Returns
+    -------
+    df : PandasDf, melted df with psd and categories
+
+    """
+
+    # create arrays for storage
+    power_array = np.array([])
+    freq_array = np.array([])
+    repeat_array = np.zeros(len(index_df))
+    
+    # get selected columns
+    df = index_df[selected_categories]
+    for i in range(len(index_df)): # iterate over dataframe
+        
+        # unpack frequency and power
+        freq = power_df['freq'][i]
+        power = power_df['pmat'][i]
+        
+        # get desired frequency index
+        f_idx = get_freq_index(freq, freq_range)
+        freq = freq[f_idx[0]:f_idx[1]+1]
+        power = np.mean(power[f_idx[0]:f_idx[1]+1,:], axis =1)
+        
+        # append to array
+        power_array = np.concatenate((power_array, power))
+        freq_array = np.concatenate((freq_array, freq ))
+        
+        # get length
+        repeat_array[i] = freq.shape[0]
+
+    # repeat array
+    df = df.reindex(df.index.repeat(repeat_array))
+    
+    # append to dataframe
+    df['freq'] = freq_array
+    df['power'] = power_array
+
+    return df
+
 
 if __name__ == '__main__':
     
@@ -176,7 +227,7 @@ if __name__ == '__main__':
     path =  os.path.join(parent_folder, filename)
     
     # enter filter conditions
-    filter_conditions = {'brain_region':['bla', 'pfc'], 'treatment':['baseline','vehicle']}
+    filter_conditions = {'brain_region':['bla'], 'treatment':['baseline','vehicle']} #
     
     # define frequencies of interest
     freqs = np.array([[2,5], [6,12], [15,30], [31,70], [80,120]])
@@ -193,12 +244,18 @@ if __name__ == '__main__':
     power_df = get_pmat(index_df)
     power_df.to_pickle(os.path.join(parent_folder, 'power_' + filename.replace('csv','pickle')))
     
-    # get power area across frequencies
-    df = melted_power_area(index_df, power_df, freqs, ['sex', 'treatment', 'brain_region'])
-    df.to_csv(os.path.join(parent_folder,  'melt_' + filename), index= False)
-
+    # # remove mains noise and outliers!!!!!!!!!!!!!!!!!!!!!
+    
     import seaborn as sns
+    
+    # get melted power area
+    df = melted_power_area(index_df, power_df, freqs, ['sex', 'treatment', 'brain_region'])
     sns.catplot(data = df, x = 'freq', y = 'power_area', hue = 'treatment', col = 'sex', row = 'brain_region', kind = 'box')
+    
+    # get melted psd
+    df = melted_psds(index_df, power_df, [1,30], ['sex', 'treatment', 'brain_region'])
+    g = sns.FacetGrid(df.iloc[::5,:], hue='treatment', row='sex', col='brain_region', palette='plasma')
+    g.map(sns.lineplot, 'freq', 'power')
 
 
 
