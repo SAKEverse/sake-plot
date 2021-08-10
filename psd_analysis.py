@@ -6,13 +6,14 @@ Created on Mon Aug  9 13:24:36 2021
 """
 
 ########## ------------------------------- IMPORTS ------------------------ ##########
+import os
 import numpy as np
 import pandas as pd
 from stft import Stft
 from get_data import AdiGet
 from filter_index import load_n_filter
 from beartype import beartype
-from typing import TypeVar
+from typing import TypeVar, Union
 PandasDf = TypeVar('pandas.core.frame.DataFrame')
 ########## ---------------------------------------------------------------- ##########
 
@@ -90,9 +91,9 @@ def get_power_area(pmat:np.ndarray, freq_vec:np.ndarray, freqs:np.ndarray) -> np
     return powers
         
 @beartype
-def add_pmat(index_df:PandasDf, fft_duration:int = 5, freq_range:list = [1, 120]) -> PandasDf:
+def get_pmat(index_df:PandasDf, fft_duration:int = 5, freq_range:list = [1, 120]) -> PandasDf:
     """
-    Add power matrix and frequency vector for each row to index dataframe.
+    Run Stft analysis on signals retrieved using rows of index_df
 
     Parameters
     ----------
@@ -102,15 +103,13 @@ def add_pmat(index_df:PandasDf, fft_duration:int = 5, freq_range:list = [1, 120]
 
     Returns
     -------
-    PandasDf
+    PandasDf, with power matrix and frequency
 
     """
 
-    
-    # add empty series to dataframe
-    index_df['pmat'] = ''
-    index_df['freq'] = ''
-    
+    # create empty series dataframe
+    df = pd.DataFrame(np.empty((len(index_df), 2)), columns = ['pmat', 'freq'], dtype = object)
+
     for i in range(len(index_df)): # iterate over dataframe
         
         # get properties
@@ -123,77 +122,90 @@ def add_pmat(index_df:PandasDf, fft_duration:int = 5, freq_range:list = [1, 120]
         stft_obj =  Stft(int(index_df['sampling_rate'][i]), fft_duration, freq_range)
 
         # get frequency vector and power matrix 
-        index_df.at[i, 'freq'], index_df.at[i, 'pmat'] = stft_obj.run_stft(signal)
+        df.at[i, 'freq'], df.at[i, 'pmat'] = stft_obj.run_stft(signal)
     
-    return index_df
+    return df
 
 
-def add_power_area(index_df:PandasDf, freqs:np.ndarray):
+def melted_power_area(index_df:PandasDf, power_df:PandasDf, freqs:list, selected_categories:list):
     """
     
 
     Parameters
     ----------
-    index_df : TYPE
+    index_df : PandasDf
         DESCRIPTION.
-    freqs : TYPE
+    power_df : PandasDf
+        DESCRIPTION.
+    freqs : list
+        DESCRIPTION.
+    selected_categories : list
         DESCRIPTION.
 
     Returns
     -------
-    index_df : TYPE
-        DESCRIPTION.
-    col_names : TYPE
+    df : TYPE
         DESCRIPTION.
 
     """
     
-    # create column names
-    col_names = []
+
+
+    # create frequency column names
+    freq_columns = []
     for i in range(freqs.shape[0]):
-        col_names.append(str(freqs[i,0]) + ' - ' + str(freqs[i,1]) + ' Hz')
+        freq_columns.append(str(freqs[i,0]) + ' - ' + str(freqs[i,1]) + ' Hz')
     
     # create array for storage
     power_array = np.empty((len(index_df), freqs.shape[0]))
     for i in range(len(index_df)): # iterate over dataframe
         
         # get power across frequencies
-        power_array[i,:] = get_power_area(index_df['pmat'][i], index_df['freq'][i], freqs)
-     
+        power_array[i,:] = get_power_area(power_df['pmat'][i], power_df['freq'][i], freqs)
+        
     # concatenate to array
-    index_df = pd.concat([index_df, pd.DataFrame(data = power_array, columns = col_names)], axis=1)
+    index_df = pd.concat([index_df, pd.DataFrame(data = power_array, columns = freq_columns)], axis=1)
+        
+    # melt dataframe for seaborn plotting
+    df = pd.melt(index_df, id_vars = selected_categories, value_vars = freq_columns, var_name = 'freq', value_name = 'power_area')
     
-    return index_df, col_names
+    return df
 
 
 
 if __name__ == '__main__':
     
+    ### ---------------------- USER INPUT -------------------------------- ###
+    
     # define path and conditions for filtering
-    path = r'C:\Users\panton01\Desktop\index.csv'
+    filename = 'index.csv'
+    parent_folder = r'C:\Users\panton01\Desktop\pydsp_analysis'
+    path =  os.path.join(parent_folder, filename)
+    
+    # enter filter conditions
     filter_conditions = {'brain_region':['bla', 'pfc'], 'treatment':['baseline','vehicle']}
     
-    # # filter index based on conditions
+    # define frequencies of interest
+    freqs = np.array([[2,5], [6,12], [15,30], [31,70], [80,120]])
+    
+    #### ---------------------------------------------------------------- ####
+    
+    # filter index based on conditions
     index_df = load_n_filter(path, filter_conditions)
     
-    # # add powers
-    freqs = np.array([[2,5], [6,12], [15,30], [31,70], [80,120]])
-       
-    # add pmat to index_df
-    index_df = add_pmat(index_df)
-    
-    # add power area across frequencies
-    index_df, parea_freqs = add_power_area(index_df, freqs)
-    
     # save dataframe
-    index_df.to_pickle("./index.pkl")
+    index_df.to_pickle(os.path.join(parent_folder, filename.replace('csv','pickle')))
     
-    # import seaborn as sns
-    df = index_df.drop(['freq', 'pmat'], axis=1)
-    df = pd.melt(df, id_vars=['sex', 'treatment', 'brain_region'], value_vars = parea_freqs)
+    # get pmat
+    power_df = get_pmat(index_df)
+    power_df.to_pickle(os.path.join(parent_folder, 'power_' + filename.replace('csv','pickle')))
     
+    # get power area across frequencies
+    df = melted_power_area(index_df, power_df, freqs, ['sex', 'treatment', 'brain_region'])
+    df.to_csv(os.path.join(parent_folder,  'melt_' + filename), index= False)
+
     import seaborn as sns
-    sns.catplot(data = df, x = 'variable', y = 'value', hue = 'treatment', col = 'sex', row = 'brain_region', kind = 'box')
+    sns.catplot(data = df, x = 'freq', y = 'power_area', hue = 'treatment', col = 'sex', row = 'brain_region', kind = 'box')
 
 
 
