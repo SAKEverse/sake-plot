@@ -129,28 +129,21 @@ def get_pmat(index_df:PandasDf, fft_duration:int = 5, freq_range:list = [1, 120]
 
 def melted_power_area(index_df:PandasDf, power_df:PandasDf, freqs:list, selected_categories:list):
     """
-    
+    Get power area and melt dataframe for seaborn plotting.
 
     Parameters
     ----------
-    index_df : PandasDf
-        DESCRIPTION.
-    power_df : PandasDf
-        DESCRIPTION.
-    freqs : list
-        DESCRIPTION.
-    selected_categories : list
-        DESCRIPTION.
+    index_df : PandasDf, experiment index
+    power_df : PandasDf, contains pmat and frequency vectors for every row of index_df
+    freqs : list, 2D list with frequency ranges for extraction of power area
+    selected_categories : list, columns that will be included in the melted
 
     Returns
     -------
-    df : TYPE
-        DESCRIPTION.
+    df : PandasDf, melted df with power area and categories
 
     """
     
-
-
     # create frequency column names
     freq_columns = []
     for i in range(freqs.shape[0]):
