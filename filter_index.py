@@ -94,7 +94,7 @@ def load_n_filter(path:str, filter_conditions:dict) -> PandasDf:
 if __name__ == '__main__':
     
     # define path and conditions for filtering
-    path = r'C:\Users\panton01\Desktop\index.csv'
+    path = r'C:\Users\panton01\Desktop\pydsp_analysis\index.csv'
     filter_conditions = {'brain_region':['bla'], 'treatment':['baseline','vehicle']}
     
     # load df
