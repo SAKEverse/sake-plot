@@ -8,7 +8,7 @@ Created on Mon Aug  9 13:24:36 2021
 ########## ------------------------------- IMPORTS ------------------------ ##########
 import numpy as np
 import pandas as pd
-from fft_pa import Stft
+from stft import Stft
 from get_data import AdiGet
 from filter_index import load_n_filter
 from beartype import beartype
@@ -121,17 +121,32 @@ def add_pmat(index_df:PandasDf, fft_duration:int = 5, freq_range:list = [1, 120]
            
         # run PSD
         stft_obj =  Stft(int(index_df['sampling_rate'][i]), fft_duration, freq_range)
-        
-        # get frequency vector
-        index_df.at[i, 'freq'] = stft_obj.freq
-        
-        # get power matrix 
-        index_df.at[i, 'pmat'] = stft_obj.run_stft(signal)
+
+        # get frequency vector and power matrix 
+        index_df.at[i, 'freq'], index_df.at[i, 'pmat'] = stft_obj.run_stft(signal)
     
     return index_df
 
 
-def add_power_area(index_df, freqs):
+def add_power_area(index_df:PandasDf, freqs:np.ndarray):
+    """
+    
+
+    Parameters
+    ----------
+    index_df : TYPE
+        DESCRIPTION.
+    freqs : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    index_df : TYPE
+        DESCRIPTION.
+    col_names : TYPE
+        DESCRIPTION.
+
+    """
     
     # create column names
     col_names = []
