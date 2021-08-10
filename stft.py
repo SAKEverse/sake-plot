@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Jul 24 15:01:11 2019
+Created on Tue Aug 10 11:11:18 2021
 
 @author: panton01
 """
@@ -8,8 +8,9 @@ Created on Wed Jul 24 15:01:11 2019
 ########## ------------------------------- IMPORTS ------------------------ ##########
 import numpy as np
 from beartype import beartype
-from scipy.fftpack import fft
+from scipy.signal import stft
 ########## ---------------------------------------------------------------- ##########
+
 
 
 # Single PSD class
@@ -46,10 +47,7 @@ class Stft:
         
         # get frequency index
         self.f_idx = self.get_freq_idx(self.freq_range)
-        
-        # get frequency vector
-        self.freq = self.freq_vec()
-        
+    
     @beartype
     def get_freq_idx(self, f:list) -> np.ndarray:
         """
@@ -69,26 +67,9 @@ class Stft:
         for i in range(len(f)): 
             freq_idx[i] = int(f[i]*(self.winsize/self.fs))
         return freq_idx
-    
-    @beartype
-    def freq_vec(self) -> np.ndarray:
-        """
-        Get frequency vector
-
-        Returns
-        -------
-        freq: np.ndarray, vector with frequencies that matches run_stft spectogram output
-
-        """
-               
-        # create frequency array
-        freq = np.arange(self.freq_range[0], self.freq_range[1]+(1/self.win_dur), 1/self.win_dur)
         
-        return freq
-    
-    
     @beartype
-    def run_stft(self, input_wave:np.ndarray) -> np.ndarray:
+    def run_stft(self, input_wave:np.ndarray):
         """
         Run short time fourier transfrom on input_wave.
 
@@ -98,57 +79,25 @@ class Stft:
 
         Returns
         -------
+        f: 1D, frequency values
         power_matrix : 2D numpy array, rows = freq and columns = time bins
 
         """
-
-        # trim signal if not divisible by window size
-        signal_len = int(len(input_wave) - (len(input_wave) % self.overlap_size))
-        input_wave = input_wave[0:signal_len]
-
         
-        # remove dc component
-        input_wave = input_wave - np.mean(input_wave)
+        f, t, pmat = stft(input_wave, self.fs, nperseg=self.winsize, noverlap = self.overlap_size)
+        pmat = np.square(np.abs(pmat[self.f_idx[0] : self.f_idx[1]+1,:]))
         
-        # pad start and end
-        input_wave = np.concatenate((input_wave[0: self.overlap_size], input_wave, input_wave[- self.overlap_size:]))
-              
-        # pre-allocate power matrix    
-        power_matrix = np.zeros([self.f_idx[1] - self.f_idx[0]+1, int((signal_len/self.overlap_size + 1))])
+        return f[self.f_idx[0] : self.f_idx[1]+1], pmat
         
-        # initialise
-        cntr = 0;
         
-        # loop through signal segments with overlap 
-        for i in range(0, signal_len + self.overlap_size, self.overlap_size):  
-            
-           # get segment
-           signal = input_wave[i : i + self.winsize]
-           
-           # multiply the fft by hanning window
-           signal = np.multiply(signal,np.hanning(self.winsize))
-           
-           # get normalised power
-           xdft = np.square(np.absolute(fft(signal)))*(1/(self.fs*self.winsize))
-           
-           # multiply *2 to conserve energy in positive frequencies
-           psdx = 2*xdft[0:int(len(xdft)/2+1)]
-           
-           # get normalised power spectral density
-           power_matrix[:,cntr] = psdx[self.f_idx[0] : self.f_idx[1]+1]
-          
-          # update counter
-           cntr+=1
-
-        return power_matrix
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
