@@ -7,25 +7,15 @@ Created on Wed Aug 11 13:10:37 2021
 
 ########## ------------------------------- IMPORTS ------------------------ ##########
 import os
+import yaml
 import click
 from pick import pick 
 ########## ---------------------------------------------------------------- ##########
 
 
-
 @click.group()
-@click.option('--run_stft', default='1-30', help = 'Run stft analysis')
 @click.pass_context
-def run_stft(run_stft):
-
-    # freq_range = input('Enter Frequency range (Hz): e.g.(5-10):\n')
-    click.secho(f"\n -> '{run_stft}' was chosen\n" , fg = 'green', bold = True)
-
-
-@click.command()
-@click.argument('csv_path', type = str)
-@click.pass_context
-def main(csv_path:str):
+def main(ctx):
     """
 
     ██████  ██    ██ ██████  ███████ ██████                                     
@@ -35,25 +25,48 @@ def main(csv_path:str):
     ██         ██    ██████  ███████ ██                                           
              
      
-
-    Inputs
-    
-    
-    -----------
-    
-    
-    csv_path : str, path to index file
-
-
-
     """
     
-    
-    
-    if not os.path.exists(os.path.dirname(csv_path)):
-        click.secho(f"\n -> '{csv_path}' path was not found\n" , fg = 'yellow', bold = True)
+    # read file
+    with open(settings_path, 'r') as file:
+        settings = yaml.load(file, Loader=yaml.FullLoader)
+        ctx.obj.update({'settings':settings})
+        
+
+@main.command()
+@click.argument('path', type = str)
+@click.pass_context
+def setpath(ctx, path):
+        
+    # check if path exists
+    if not os.path.isfile(path):
+        click.secho(f"\n -> '{path}' file was not found.\n", fg = 'yellow', bold = True)
         return
     
+    # set path
+    ctx.obj['settings']['index_path'] = path
+        
+    # write to file
+    with open(settings_path, 'w') as file:
+        yaml.dump(ctx.obj['settings'], file)
+        
+    click.secho(f"\n -> Path was set to:'{path}'.\n", fg = 'green', bold = True)
+
+@main.command()
+@click.argument('freq_range', type = str)
+# @click.option('--stft', default='1-30', help = 'Run stft analysis')
+@click.pass_context
+def stft(freq_range):
+
+    click.secho(f"\n -> '{freq_range}' was chosen\n" , fg = 'green', bold = True)
+    
+    
+@main.command()
+@click.argument('freq_range', type = str)
+@click.pass_context
+def plot(freq_range):
+
+    click.secho(f"\n -> '{freq_range}' was chosen\n" , fg = 'green', bold = True)
     # select from command list
     main_dropdown_list = ['PSD', 'individual PSDs', 'summary plot', '']
     title = 'Please select file for analysis: '
@@ -63,7 +76,11 @@ def main(csv_path:str):
 
 # Execute if module runs as main program
 if __name__ == '__main__': 
-    main()
+    
+    # define settings path
+    settings_path = 'settings.yaml'
+    # start
+    main(obj={})
     
     
     
