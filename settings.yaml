@@ -1,0 +1,12 @@
+freq_ranges:
+- - 2
+  - 5
+- - 6
+  - 12
+- - 15
+  - 29
+- - 30
+  - 70
+- - 80
+  - 120
+index_path: C:\Users\panton01\Desktop\pydsp_analysis\index.csv
