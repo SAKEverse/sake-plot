@@ -160,7 +160,8 @@ def melted_power_area(index_df:PandasDf, power_df:PandasDf, freqs:list, selected
     index_df = pd.concat([index_df, pd.DataFrame(data = power_array, columns = freq_columns)], axis=1)
         
     # melt dataframe for seaborn plotting
-    df = pd.melt(index_df, id_vars = selected_categories, value_vars = freq_columns, var_name = 'freq', value_name = 'power_area')
+    df = pd.melt(index_df, id_vars = selected_categories, value_vars = freq_columns, var_name = 'freq', value_name = 'power_area',
+                 ignore_index=False)
     
     return df
 
@@ -227,7 +228,7 @@ if __name__ == '__main__':
     path =  os.path.join(parent_folder, filename)
     
     # enter filter conditions
-    filter_conditions = {'brain_region':['bla'], 'treatment':['baseline','vehicle']} #
+    filter_conditions = {'brain_region':['bla', 'pfc'], 'treatment':['baseline','vehicle']} #
     
     # define frequencies of interest
     freqs = np.array([[2,5], [6,12], [15,30], [31,70], [80,120]])
@@ -253,9 +254,9 @@ if __name__ == '__main__':
     sns.catplot(data = df, x = 'freq', y = 'power_area', hue = 'treatment', col = 'sex', row = 'brain_region', kind = 'box')
     
     # get melted psd
-    df = melted_psds(index_df, power_df, [1,30], ['sex', 'treatment', 'brain_region'])
-    g = sns.FacetGrid(df.iloc[::5,:], hue='treatment', row='sex', col='brain_region', palette='plasma')
-    g.map(sns.lineplot, 'freq', 'power')
+    # df = melted_psds(index_df, power_df, [1,30], ['sex', 'treatment', 'brain_region'])
+    # g = sns.FacetGrid(df.iloc[::5,:], hue='treatment', row='sex', col='brain_region', palette='plasma')
+    # g.map(sns.lineplot, 'freq', 'power')
 
 
 
