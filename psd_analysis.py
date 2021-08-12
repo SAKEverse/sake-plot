@@ -192,22 +192,22 @@ if __name__ == '__main__':
     # filter index based on conditions
     index_df = load_n_filter(path, filter_conditions)
     
-    # save dataframe
-    index_df.to_pickle(os.path.join(parent_folder, filename.replace('csv','pickle')))
+    # # save dataframe
+    # index_df.to_pickle(os.path.join(parent_folder, filename.replace('csv','pickle')))
     
     # get pmat
-    power_df = get_pmat(index_df)
-    power_df.to_pickle(os.path.join(parent_folder, 'power_' + filename.replace('csv','pickle')))
+    # power_df = get_pmat(index_df)
+    # power_df.to_pickle(os.path.join(parent_folder, 'power_' + filename.replace('csv','pickle')))
     
     # # remove mains noise and outliers!!!!!!!!!!!!!!!!!!!!!
     
     import seaborn as sns
     
-    # get melted power area
-    df = melted_power_area(index_df, power_df, freqs, ['sex', 'treatment', 'brain_region'])
-    sns.catplot(data = df, x = 'freq', y = 'power_area', hue = 'treatment', col = 'sex', row = 'brain_region', kind = 'box')
+    # # get melted power area
+    # df = melted_power_area(index_df, power_df, freqs, ['sex', 'treatment', 'brain_region'])
+    # sns.catplot(data = df, x = 'freq', y = 'power_area', hue = 'treatment', col = 'sex', row = 'brain_region', kind = 'box')
     
-    # get melted psd
+    # # get melted psd
     # df = melted_psds(index_df, power_df, [1,30], ['sex', 'treatment', 'brain_region'])
     # g = sns.FacetGrid(df.iloc[::5,:], hue='treatment', row='sex', col='brain_region', palette='plasma')
     # g.map(sns.lineplot, 'freq', 'power')
