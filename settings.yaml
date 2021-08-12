@@ -1,4 +1,4 @@
-fft_freq:
+fft_freq_range:
 - 1
 - 150
 fft_win: 5

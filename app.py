@@ -44,6 +44,7 @@ def main(ctx):
     
     # check if index file is present and get full path
     ctx.obj.update({'index_path': os.path.join(ctx.obj['search_path'], ctx.obj['file_index'])})
+    
     if os.path.isfile(ctx.obj['index_path']):
         ctx.obj.update({'index_present':1})
         ctx.obj.update({'index':load_index(ctx.obj['index_path'])})
@@ -52,10 +53,7 @@ def main(ctx):
     ctx.obj.update({'power_mat_path': os.path.join(ctx.obj['search_path'], ctx.obj['file_power_mat'])})
     if os.path.isfile(ctx.obj['power_mat_path']):
         ctx.obj.update({'power_present':1})
-        
-        
-    
-        
+            
   
 @main.command()
 @click.argument('path', type = str)
@@ -73,10 +71,10 @@ def setpath(ctx, path):
 
 
 @main.command()
-@click.argument('freq_range', type = str)
+# @click.argument('freq_range', type = str)
 # @click.option('--stft', default='1-30', help = 'Run stft analysis')
 @click.pass_context
-def stft(ctx, freq_range):
+def stft(ctx):
     
     # check if path exists
     if not ctx.obj['index_present']:
@@ -84,13 +82,11 @@ def stft(ctx, freq_range):
         return
     
     # get power 
-    power_df = get_pmat(ctx.obj['index'])
+    power_df = get_pmat(ctx.obj['index'], fft_duration = ctx.obj['fft_win'],
+                       freq_range = ctx.obj['fft_freq_range'], f_noise = ctx.obj['mains_noise'])
     
-    # save to pickle  get_pmat(index_df:PandasDf, fft_duration:int = 5, freq_range:list = [1, 120], f_noise = [59, 61]) -> PandasDf:
+    # save power
     power_df.to_pickle(ctx.obj['power_mat_path'])
-    
-
-    click.secho(f"\n -> '{freq_range}' was chosen\n" , fg = 'green', bold = True)
     
     
 @main.command()
