@@ -9,59 +9,13 @@ Created on Mon Aug  9 13:24:36 2021
 import os
 import numpy as np
 import pandas as pd
-from stft import Stft
+from stft import Stft, get_freq_index
 from get_data import AdiGet
 from filter_index import load_n_filter
 from beartype import beartype
 from typing import TypeVar
 PandasDf = TypeVar('pandas.core.frame.DataFrame')
 ########## ---------------------------------------------------------------- ##########
-
-class GetIndex():
-    "Get index"
-    
-    def __init__(self, array):
-        self.array = array
-
-    def find_nearest(self, value):
-        """
-        find nearest value in self.array
-
-        Parameters
-        ----------
-        value : values to search the array for
-
-        Returns
-        -------
-        idx for values
-        
-        """
-        return (np.abs(self.array - value)).argmin()
-
-@beartype
-def get_freq_index(freq_vector:np.ndarray, freqs) -> np.ndarray:
-    """
-    Get frequency index
-
-    Parameters
-    ----------
-    freq_vector : np.ndarray, frequency vector to be indexed
-    freqs : values to find the index
-
-    Returns
-    -------
-    np.ndarray
-
-    """
-    
-    # instantiate
-    f = GetIndex(freq_vector)
-    
-    # vectorize function
-    vfunc = np.vectorize(f.find_nearest)
-
-    # get index 
-    return vfunc(freqs)
 
 @beartype
 def get_power_area(pmat:np.ndarray, freq_vec:np.ndarray, freqs:np.ndarray) -> np.ndarray:
@@ -122,7 +76,7 @@ def get_pmat(index_df:PandasDf, fft_duration:int = 5, freq_range:list = [1, 120]
         stft_obj =  Stft(int(index_df['sampling_rate'][i]), fft_duration, freq_range)
 
         # get frequency vector and power matrix 
-        df.at[i, 'freq'], df.at[i, 'pmat'] = stft_obj.run_stft(signal)
+        df.at[i, 'freq'], df.at[i, 'pmat'] = stft_obj.run_stft(signal, f_noise)
     
     return df
 
