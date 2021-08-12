@@ -1,6 +1,7 @@
 fft_freq:
 - 1
 - 150
+fft_win: 5
 file_index: file_index.csv
 file_power_mat: power_mat.pickle
 freq_ranges:

@@ -9,8 +9,10 @@ Created on Wed Aug 11 13:10:37 2021
 import os
 import yaml
 import click
-from pick import pick 
-from app_interface import file_present_check
+from pick import pick
+from filter_index import load_index
+from psd_analysis import get_pmat
+# from app_interface import file_present_check
 ########## ---------------------------------------------------------------- ##########
 
 
@@ -40,15 +42,19 @@ def main(ctx):
     ctx.obj.update({'index_present': 0})
     ctx.obj.update({'power_present': 0})
     
-    # check if index file is present
+    # check if index file is present and get full path
     ctx.obj.update({'index_path': os.path.join(ctx.obj['search_path'], ctx.obj['file_index'])})
     if os.path.isfile(ctx.obj['index_path']):
         ctx.obj.update({'index_present':1})
+        ctx.obj.update({'index':load_index(ctx.obj['index_path'])})
         
-    # check if power mat file is present
+    # check if power mat file is present and get full path
     ctx.obj.update({'power_mat_path': os.path.join(ctx.obj['search_path'], ctx.obj['file_power_mat'])})
     if os.path.isfile(ctx.obj['power_mat_path']):
         ctx.obj.update({'power_present':1})
+        
+        
+    
         
   
 @main.command()
@@ -77,7 +83,11 @@ def stft(ctx, freq_range):
         click.secho('\n -> Index file was not found.\n', fg = 'yellow', bold = True)
         return
     
+    # get power 
+    power_df = get_pmat(ctx.obj['index'])
     
+    # save to pickle  get_pmat(index_df:PandasDf, fft_duration:int = 5, freq_range:list = [1, 120], f_noise = [59, 61]) -> PandasDf:
+    power_df.to_pickle(ctx.obj['power_mat_path'])
     
 
     click.secho(f"\n -> '{freq_range}' was chosen\n" , fg = 'green', bold = True)

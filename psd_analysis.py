@@ -12,6 +12,7 @@ import pandas as pd
 from stft import Stft, get_freq_index
 from get_data import AdiGet
 from filter_index import load_n_filter
+from tqdm import tqdm
 from beartype import beartype
 from typing import TypeVar
 PandasDf = TypeVar('pandas.core.frame.DataFrame')
@@ -45,7 +46,7 @@ def get_power_area(pmat:np.ndarray, freq_vec:np.ndarray, freqs:np.ndarray) -> np
     return powers
         
 @beartype
-def get_pmat(index_df:PandasDf, fft_duration:int = 5, freq_range:list = [1, 120]) -> PandasDf:
+def get_pmat(index_df:PandasDf, fft_duration:int = 5, freq_range:list = [1, 120], f_noise = [59, 61]) -> PandasDf:
     """
     Run Stft analysis on signals retrieved using rows of index_df
 
@@ -64,7 +65,7 @@ def get_pmat(index_df:PandasDf, fft_duration:int = 5, freq_range:list = [1, 120]
     # create empty series dataframe
     df = pd.DataFrame(np.empty((len(index_df), 2)), columns = ['pmat', 'freq'], dtype = object)
 
-    for i in range(len(index_df)): # iterate over dataframe
+    for i in tqdm(range(len(index_df))): # iterate over dataframe
         
         # get properties
         properties = index_df[AdiGet.input_parameters].loc[i].to_dict()
