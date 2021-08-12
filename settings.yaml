@@ -9,13 +9,13 @@ power_mat: 'power_mat.pickle'
 
 # frequency range for convertion (STFT) 
 fft_freq:
--1
--150
+- 1
+- 150
 
 # frequency band for removing mains noise
 mains_noise:
--59
--61
+- 59
+- 61
 
 # frequency ranges for plotting and export
 freq_ranges:
