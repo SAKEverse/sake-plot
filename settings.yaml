@@ -14,7 +14,6 @@ freq_ranges:
   - 70
 - - 80
   - 120
-index_path: sdas
 mains_noise:
 - 59
 - 61

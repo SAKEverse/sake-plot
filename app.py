@@ -57,7 +57,7 @@ def main(ctx):
 def setpath(ctx, path):
         
     # add path to original settings
-    ctx.obj['settings']['index_path'] = path
+    ctx.obj['settings']['search_path'] = path
 
     # write to file
     with open(settings_path, 'w') as file:
@@ -72,14 +72,12 @@ def setpath(ctx, path):
 @click.pass_context
 def stft(ctx, freq_range):
     
-    click.echo(ctx.obj['index_present'])
-    file_present_check(ctx)
-    
     # check if path exists
-    breakpoint()
-    if ctx.obj['index_present']:
-        click.secho("\n -> Index file was not found.\n", fg = 'yellow', bold = True)
+    if not ctx.obj['index_present']:
+        click.secho('\n -> Index file was not found.\n', fg = 'yellow', bold = True)
         return
+    
+    
     
 
     click.secho(f"\n -> '{freq_range}' was chosen\n" , fg = 'green', bold = True)
