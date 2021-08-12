@@ -5,7 +5,7 @@ search_path: 'C:\Users\panton01\Desktop\pydsp_analysis'
 file_index: 'file_index.csv'
 
 # converted frequency spectrum
-power_mat: 'power_mat.pickle'
+file_power_mat: 'power_mat.pickle'
 
 # frequency range for convertion (STFT) 
 fft_freq:
