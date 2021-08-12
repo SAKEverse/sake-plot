@@ -49,9 +49,8 @@ def main(ctx):
     ctx.obj.update({'power_mat_path': os.path.join(ctx.obj['search_path'], ctx.obj['file_power_mat'])})
     if os.path.isfile(ctx.obj['power_mat_path']):
         ctx.obj.update({'power_present':1})
-
         
-
+  
 @main.command()
 @click.argument('path', type = str)
 @click.pass_context
@@ -59,12 +58,13 @@ def setpath(ctx, path):
         
     # add path to original settings
     ctx.obj['settings']['index_path'] = path
-    breakpoint()
+
     # write to file
     with open(settings_path, 'w') as file:
         yaml.dump(ctx.obj['settings'], file)
         
     click.secho(f"\n -> Path was set to:'{path}'.\n", fg = 'green', bold = True)
+
 
 @main.command()
 @click.argument('freq_range', type = str)
@@ -72,9 +72,11 @@ def setpath(ctx, path):
 @click.pass_context
 def stft(ctx, freq_range):
     
-    # file_present_check(ctx)
+    click.echo(ctx.obj['index_present'])
+    file_present_check(ctx)
     
     # check if path exists
+    breakpoint()
     if ctx.obj['index_present']:
         click.secho("\n -> Index file was not found.\n", fg = 'yellow', bold = True)
         return
