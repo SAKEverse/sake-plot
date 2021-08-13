@@ -156,7 +156,7 @@ def plot(ctx, freq):
     if option == 'mean PSDs':
         df = melted_psds(index_df, power_df, freq_range, ['sex', 'treatment', 'brain_region'])
         g = sns.FacetGrid(df.iloc[::5,:], hue='treatment', row='sex', col='brain_region', palette='plasma')
-        g.map(sns.lineplot, 'freq', 'power')
+        g.map(sns.lineplot, 'freq', 'power', ci = 'sd')
         plt.show()
     
     
