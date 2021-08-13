@@ -72,12 +72,15 @@ def setpath(ctx, path):
 
     
 @main.command()
-@click.option('--freq_range', type = str, help = 'Enter Freq. range, e.g. 1-30')
+@click.option('--freq', type = str, help = 'Enter Frequency range, e.g. 1-30')
 @click.pass_context
-def stft(ctx, freq_range):
-    # breakpoint()
-    
+def stft(ctx, freq):
     """Runs the Short-time Fourier Transform"""
+
+    # check if user defined range
+    if freq is not None:
+        ctx.obj['fft_freq_range'] = [int(i) for i in freq.split('_')]
+    
     # check if path exists
     if not ctx.obj['index_present']:
         click.secho('\n -> Index file was not found.\n', fg = 'yellow', bold = True)
@@ -89,6 +92,9 @@ def stft(ctx, freq_range):
     
     # save power
     power_df.to_pickle(ctx.obj['power_mat_path'])
+    
+    freq_range = 
+    click.secho(f"\n -> Analysis completed and file saved in:'{ctx.obj['power_mat_path']}'.\n", fg = 'green', bold = True)
     
     
 @main.command()
