@@ -10,6 +10,7 @@ from matplotlib import pyplot as plt
 import matplotlib as mpl
 import numpy as np
 import os
+mpl.use('TKAgg')
 
 class GridGraph:
     def __init__(self,path,filename,data):
@@ -138,20 +139,20 @@ class GridGraph:
             default[i]=param
         #graph the facet plot with the first 4 categories
         x,hue,col,row = default
-        g=sns.catplot(data = self.data, x = x, y = self.graph_value, hue = hue, col = col, row = row, kind = kind)
+        g=sns.catplot(data = self.data, x = x, y = self.graph_value, hue = hue, col = col, row = row, kind = kind,height=4,aspect=6/4)
         #make each plot title clickable
         axes=g.axes.flat
         for ax in axes:
             ax.set_title(ax.get_title(),picker=5)
         #add clickable options for x,hue,row,col
         spacing=np.linspace(.2,.9,4)
-        plt.tight_layout(pad=2)
+        g.tight_layout(pad=2)
         for i,text in enumerate(graph_params):
-            plt.figtext(spacing[i],.01,cats[i]+text,fontsize=10,picker=5,color='blue')
+            plt.figtext(spacing[i],.01,cats[i]+text,fontsize=10,picker=5,color='blue',fontweight='bold')
         #add helpful notes to figure
-        plt.figtext(.01,.01,"Click a category to change")
+        plt.figtext(.01,.01,"Click to change:")
         if len(self.param_list)>2:
-            plt.figtext(.4,.97,"Click a graph title to export",fontsize=12,fontweight='bold')
+            plt.figtext(.35,.97,"Click a graph title to export",fontsize=12,fontweight='bold')
         else:
             plt.figtext(.4,.97,"Click to export",fontsize=12,fontweight='bold',picker=5)
         #add the click callback to the figure
