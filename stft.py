@@ -20,7 +20,7 @@ class GetIndex():
 
     def find_nearest(self, value):
         """
-        find nearest value in self.array
+        Find nearest value in self.array.
 
         Parameters
         ----------
@@ -36,7 +36,7 @@ class GetIndex():
 @beartype
 def get_freq_index(freq_vector:np.ndarray, freqs) -> np.ndarray:
     """
-    Get frequency index
+    Get frequency index.
 
     Parameters
     ----------
@@ -58,7 +58,19 @@ def get_freq_index(freq_vector:np.ndarray, freqs) -> np.ndarray:
     # get index 
     return vfunc(freqs)
 
-def pandas_fill(arr:np.ndarray) -> np.ndarray:
+def f_fill(arr:np.ndarray) -> np.ndarray:
+    """
+    Replace nans using pandas ffil method.
+
+    Parameters
+    ----------
+    arr : np.ndarray
+
+    Returns
+    -------
+    np.ndarray
+
+    """
     df = pd.DataFrame(arr)
     df = df.fillna(method='ffill', axis=0)
     return  df.values
@@ -140,7 +152,21 @@ class Stft:
         return f[self.f_idx[0] : self.f_idx[1]+1], pmat
 
     @staticmethod
-    def remove_mains(freq:np.ndarray, pmat:np.ndarray, f_noise:list):
+    def remove_mains(freq:np.ndarray, pmat:np.ndarray, f_noise:list) -> np.ndarray:
+        """
+        Remove mains noise, using nans replacement and
+
+        Parameters
+        ----------
+        freq : np.ndarray
+        pmat : np.ndarray
+        f_noise : list
+
+        Returns
+        -------
+        pmat : np.ndarray
+
+        """
 
         # find frequency index
         f_idx = get_freq_index(freq, f_noise)
@@ -149,12 +175,26 @@ class Stft:
         pmat[f_idx[0]:f_idx[1]+1,:] = np.nan
 
         # fill NaNs
-        pmat = pandas_fill(pmat)
+        pmat = f_fill(pmat)
 
         return pmat
 
 
     def run_stft(self, input_wave:np.ndarray, f_noise:list):
+        """
+        Get stft and remove mains noise.
+
+        Parameters
+        ----------
+        input_wave : np.ndarray, 1D signal
+        f_noise : list, lower and upper bounds of mains noise
+
+        Returns
+        -------
+        freq : np.ndarray, real frequency vector
+        pmat : np.ndarray, transformed spectogram
+
+        """
 
         # get stft
         freq, pmat = self.get_stft(input_wave)
