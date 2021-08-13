@@ -9,10 +9,11 @@ Created on Wed Aug 11 13:10:37 2021
 import os
 import yaml
 import click
+import pandas as pd
 from pick import pick
 from filter_index import load_index
-from psd_analysis import get_pmat
-# from app_interface import file_present_check
+from psd_analysis import get_pmat, melted_power_area
+from facet_plot_gui import GridGraph
 ########## ---------------------------------------------------------------- ##########
 
 
@@ -77,36 +78,68 @@ def setpath(ctx, path):
 def stft(ctx, freq):
     """Runs the Short-time Fourier Transform"""
 
-    # check if user defined range
+    # check if index file was not found
+    if not ctx.obj['index_present']:
+        click.secho(f"\n -> File '{ctx.obj['file_index']}' was not found in '{ctx.obj['search_path']}'.\n", fg = 'yellow', bold = True)
+        return
+    
+    # check if user defined frequency range
     if freq is not None:
         ctx.obj['fft_freq_range'] = [int(i) for i in freq.split('_')]
     
-    # check if path exists
-    if not ctx.obj['index_present']:
-        click.secho('\n -> Index file was not found.\n', fg = 'yellow', bold = True)
-        return
-    
     # get power 
     power_df = get_pmat(ctx.obj['index'], fft_duration = ctx.obj['fft_win'],
-                       freq_range = ctx.obj['fft_freq_range'], f_noise = ctx.obj['mains_noise'])
+               freq_range = ctx.obj['fft_freq_range'], f_noise = ctx.obj['mains_noise'])
     
     # save power
     power_df.to_pickle(ctx.obj['power_mat_path'])
     
-    freq_range = 
-    click.secho(f"\n -> Analysis completed and file saved in:'{ctx.obj['power_mat_path']}'.\n", fg = 'green', bold = True)
+    # get freq_range for display
+    freq_range = '-'.join(list(map(str, ctx.obj['fft_freq_range']))) + ' Hz'
+    
+    click.secho(f"\n -> Analysis completed: {freq_range} and file saved in:'{ctx.obj['power_mat_path']}'.\n", fg = 'green', bold = True)
     
     
 @main.command()
-@click.argument('freq_range', type = str)
+@click.argument('freq', type = str)
 @click.pass_context
-def plot(ctx, freq_range):
+def plot(ctx, freq):
     """Enter plot menu"""
-    click.secho(f"\n -> '{freq_range}' was chosen\n" , fg = 'green', bold = True)
+    
+    # check if index file exists
+    if not ctx.obj['index_present']:
+        click.secho(f"\n -> File '{ctx.obj['file_index']}' was not found in '{ctx.obj['search_path']}'.\n", fg = 'yellow', bold = True)
+        return
+    
+    # check if power mat exists
+    elif not ctx.obj['power_present']:
+        click.secho(f"\n -> File '{ctx.obj['file_power_mat']}' was not found in '{ctx.obj['search_path']}'" + 
+                    "Need to run 'stft' before plotting.\n", fg = 'yellow', bold = True)
+        return
+    
+    # convert string to list
+    freq_range = [int(i) for i in freq.split('_')]
+    
+    
     # select from command list
-    main_dropdown_list = ['PSD', 'individual PSDs', 'summary plot', '']
+    main_dropdown_list = ['PSD', 'individual PSDs', 'summary plot']
     title = 'Please select file for analysis: '
     option, index = pick(main_dropdown_list, title, indicator = '-> ')
+    
+    # load index and power mat
+    index_df = pd.read_csv(ctx.obj['index_path'])
+    power_df = pd.read_pickle(ctx.obj['power_mat_path'])
+    
+    # get melted power area
+    df = melted_power_area(index_df, power_df, freq_range, ['sex', 'treatment', 'brain_region'])
+    
+    # save to csv
+    df.to_csv(os.path.join(ctx.obj['search_path'], ctx.obj['melted_power_mat']), index = False)
+    
+    if option == 'summary plot':
+        graph = GridGraph(os.path.join(ctx.obj['search_path'], ctx.obj['melted_power_mat']))
+        graph.draw_graph('violin')
+    
     
     
 
@@ -117,3 +150,7 @@ if __name__ == '__main__':
     settings_path = 'settings.yaml'
     # start
     main(obj={})
+    
+    
+    
+    
