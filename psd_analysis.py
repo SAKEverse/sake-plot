@@ -13,6 +13,7 @@ from stft import Stft, get_freq_index
 from get_data import AdiGet
 from filter_index import load_n_filter
 from tqdm import tqdm
+from facet_plot_gui import GridGraph
 from beartype import beartype
 from typing import TypeVar
 PandasDf = TypeVar('pandas.core.frame.DataFrame')
@@ -48,7 +49,7 @@ def get_power_area(pmat:np.ndarray, freq_vec:np.ndarray, freqs:np.ndarray) -> np
 @beartype
 def get_pmat(index_df:PandasDf, fft_duration:int = 5, freq_range:list = [1, 120], f_noise = [59, 61]) -> PandasDf:
     """
-    Run Stft analysis on signals retrieved using rows of index_df
+    Run Stft analysis on signals retrieved using rows of index_df.
 
     Parameters
     ----------
@@ -178,7 +179,7 @@ if __name__ == '__main__':
     ### ---------------------- USER INPUT -------------------------------- ###
     
     # define path and conditions for filtering
-    filename = 'index.csv'
+    filename = 'file_index.csv'
     parent_folder = r'C:\Users\panton01\Desktop\pydsp_analysis'
     path =  os.path.join(parent_folder, filename)
     
@@ -197,7 +198,7 @@ if __name__ == '__main__':
     # index_df.to_pickle(os.path.join(parent_folder, filename.replace('csv','pickle')))
     
     # get pmat
-    # power_df = get_pmat(index_df)
+    power_df = get_pmat(index_df)
     # power_df.to_pickle(os.path.join(parent_folder, 'power_' + filename.replace('csv','pickle')))
     
     # # remove mains noise and outliers!!!!!!!!!!!!!!!!!!!!!
@@ -208,12 +209,18 @@ if __name__ == '__main__':
     # df = melted_power_area(index_df, power_df, freqs, ['sex', 'treatment', 'brain_region'])
     # sns.catplot(data = df, x = 'freq', y = 'power_area', hue = 'treatment', col = 'sex', row = 'brain_region', kind = 'box')
     
-    # # get melted psd
-    # df = melted_psds(index_df, power_df, [1,30], ['sex', 'treatment', 'brain_region'])
+    # get melted psd
+    df = melted_psds(index_df, power_df, [1,30], ['sex', 'treatment', 'brain_region'])
     # g = sns.FacetGrid(df.iloc[::5,:], hue='treatment', row='sex', col='brain_region', palette='plasma')
     # g.map(sns.lineplot, 'freq', 'power')
-
-
+    
+  
+    path = r'C:\Users\panton01\Desktop\pydsp_analysis'
+    filename = 'power_area_df.csv'
+    df.to_csv(os.path.join(path, filename), index = False)
+    
+    graph = GridGraph(path, filename)
+    graph.draw_graph('violin')
 
 
 
