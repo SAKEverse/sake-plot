@@ -59,7 +59,7 @@ def main(ctx):
 @click.argument('path', type = str)
 @click.pass_context
 def setpath(ctx, path):
-        
+    """Set path to index file parent directory"""    
     # add path to original settings
     ctx.obj['settings']['search_path'] = path
 
@@ -70,12 +70,14 @@ def setpath(ctx, path):
     click.secho(f"\n -> Path was set to:'{path}'.\n", fg = 'green', bold = True)
 
 
-@main.command()
-# @click.argument('freq_range', type = str)
-# @click.option('--stft', default='1-30', help = 'Run stft analysis')
-@click.pass_context
-def stft(ctx):
     
+@main.command()
+@click.option('--freq_range', type = str, help = 'Enter Freq. range, e.g. 1-30')
+@click.pass_context
+def stft(ctx, freq_range):
+    # breakpoint()
+    
+    """Runs the Short-time Fourier Transform"""
     # check if path exists
     if not ctx.obj['index_present']:
         click.secho('\n -> Index file was not found.\n', fg = 'yellow', bold = True)
@@ -92,8 +94,8 @@ def stft(ctx):
 @main.command()
 @click.argument('freq_range', type = str)
 @click.pass_context
-def plot(freq_range):
-
+def plot(ctx, freq_range):
+    """Enter plot menu"""
     click.secho(f"\n -> '{freq_range}' was chosen\n" , fg = 'green', bold = True)
     # select from command list
     main_dropdown_list = ['PSD', 'individual PSDs', 'summary plot', '']
