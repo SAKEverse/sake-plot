@@ -11,7 +11,7 @@ import matplotlib as mpl
 import numpy as np
 import os
 
-class grid_graph:
+class GridGraph:
     def __init__(self,path,filename):
         #import the csv file
         self.data = pd.read_csv(os.path.join(path,filename),index_col=0)
@@ -112,5 +112,5 @@ class grid_graph:
 if __name__ == '__main__':
     path= r"C:\Users\gweiss01\Downloads\\"
     filename=r"melt_index.csv"
-    graph=grid_graph(path,filename)
+    graph=GridGraph(path,filename)
     graph.draw_graph('violin')
