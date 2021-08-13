@@ -99,6 +99,8 @@ def melted_power_area(index_df:PandasDf, power_df:PandasDf, freqs:list, selected
     df : PandasDf, melted df with power area and categories
 
     """
+    # convert to numpy array
+    freqs = np.array(freqs)
     
     # create frequency column names
     freq_columns = []
@@ -205,8 +207,8 @@ if __name__ == '__main__':
     
     import seaborn as sns
     
-    # # get melted power area
-    # df = melted_power_area(index_df, power_df, freqs, ['sex', 'treatment', 'brain_region'])
+    # get melted power area
+    df = melted_power_area(index_df, power_df, freqs, ['sex', 'treatment', 'brain_region'])
     # sns.catplot(data = df, x = 'freq', y = 'power_area', hue = 'treatment', col = 'sex', row = 'brain_region', kind = 'box')
     
     # get melted psd
