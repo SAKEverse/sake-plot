@@ -13,6 +13,19 @@ import os
 
 class GridGraph:
     def __init__(self,path,filename):
+        """
+        Creates an object that stores tidy data from .csv that can create a dynamic facet plot.
+
+        Parameters
+        ----------
+        path : str, Full path of the directory containing the data to be graphed.
+        filename : str, name of the .csv file to export. 
+
+        Returns
+        -------
+        None.
+
+        """
         #import the csv file
         self.data = pd.read_csv(os.path.join(path,filename),index_col=0)
         #get the categories from the columns (exceptt the last one)
@@ -25,6 +38,19 @@ class GridGraph:
         self.pivot_params=self.param_list
 
     def on_pick(self,event):
+        """
+        Callback for clicking on graphs. Export data if title is clicked,
+        and changes the category if graph parameter is clicked
+
+        Parameters
+        ----------
+        event : matplotlib event object.
+
+        Returns
+        -------
+        None.
+
+        """
         pivot_params=self.param_list
         var1=''
         var2=''
@@ -40,7 +66,7 @@ class GridGraph:
             self.draw_graph()
             return
         #if clicked on a graph title
-        elif '|' in event.artist.axes.get_title():
+        elif '|' in event.artist.get_text():
                 #parse the string for categories and variables
                 str1,str2=event.artist.axes.get_title().split(r" | ")
                 cat1,var1=str1.split(" = ")
@@ -52,9 +78,12 @@ class GridGraph:
                 #update the list of cats to pivot back to
                 pivot_params.remove(cat1)
                 pivot_params.remove(cat2)
-        else:
-                cat1,var1=str1.split(" = ")
+        elif " = " in event.artist.get_text():
+                cat1,var1=event.artist.axes.get_title().split(" = ")
                 export_index=self.data[cat1]==var1
+                pivot_params.remove(cat1)
+        else:
+                export_index=np.ones(self.data.shape[0])==1
         
         
         all_data=pd.DataFrame()
@@ -62,7 +91,6 @@ class GridGraph:
         for cond in self.data[pivot_params[1]].unique():
             #make new table with the filter index
             filtered=self.data[export_index & (self.data[pivot_params[1]]==cond)]
-            print(cond)
             #melt the table by the first category, creating a separate table for each var in the second category
             cond_df=filtered.pivot(columns=self.pivot_params[0],values=self.graph_value)
             cond_df=cond_df[self.data['freq'].unique()]
@@ -74,10 +102,25 @@ class GridGraph:
         all_data.to_csv(path+filename.split(".")[0]+"_"+var1+"_"+var2+".csv")
             
             
-        print(event.artist.axes.get_title(),"Exported!")
+        print("Exported!")
 
     
     def draw_graph(self,kind='box',params=None):
+        """
+        
+
+        Parameters
+        ----------
+        kind : str, optional
+            DESCRIPTION. Type of plot, eg. box, bar, violin, strip.
+        params : list, optional
+            DESCRIPTION. A list of 1-4 categories to graph with order:x,hue,col,row.
+
+        Returns
+        -------
+        None.
+
+        """
         cats=['X:','Hue:','Col:','Row:']
         # pick the first 4 parameters
         if params != None: self.param_list = params
@@ -104,13 +147,16 @@ class GridGraph:
             plt.figtext(spacing[i],.01,cats[i]+text,fontsize=10,picker=5,color='blue')
         #add helpful notes to figure
         plt.figtext(.01,.01,"Click a category to change")
-        plt.figtext(.4,.98,"Click a graph title to export",fontsize=12,fontweight='bold')
+        if len(self.param_list)>2:
+            plt.figtext(.4,.98,"Click a graph title to export",fontsize=12,fontweight='bold')
+        else:
+            plt.figtext(.4,.98,"Click to export",fontsize=12,fontweight='bold',picker=5)
         #add the click callback to the figure
         fig.canvas.callbacks.connect('pick_event', self.on_pick)
     
     
 if __name__ == '__main__':
     path= r"C:\Users\gweiss01\Downloads\\"
-    filename=r"melt_index.csv"
+    filename=r"melt_index1.csv"
     graph=GridGraph(path,filename)
     graph.draw_graph('violin')
