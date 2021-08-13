@@ -4,7 +4,6 @@ fft_freq_range:
 fft_win: 5
 file_index: file_index.csv
 file_power_mat: power_mat.pickle
-melted_power_mat: melted_power_area.csv
 freq_ranges:
 - - 2
   - 5
@@ -19,4 +18,5 @@ freq_ranges:
 mains_noise:
 - 59
 - 61
+melted_power_mat: melted_power_area.csv
 search_path: C:\Users\panton01\Desktop\pydsp_analysis
