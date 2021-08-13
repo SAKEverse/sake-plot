@@ -73,7 +73,7 @@ def setpath(ctx, path):
 
     
 @main.command()
-@click.option('--freq', type = str, help = 'Enter Frequency range, e.g. 1-30')
+@click.option('--freq', type = str, help = 'Enter frequency range, e.g. 1-30')
 @click.pass_context
 def stft(ctx, freq):
     """Runs the Short-time Fourier Transform"""
@@ -83,10 +83,14 @@ def stft(ctx, freq):
         click.secho(f"\n -> File '{ctx.obj['file_index']}' was not found in '{ctx.obj['search_path']}'.\n", fg = 'yellow', bold = True)
         return
     
-    # check if user defined frequency range
+    # get frequency
     if freq is not None:
-        ctx.obj['fft_freq_range'] = [int(i) for i in freq.split('_')]
-    
+        freq_range = [int(i) for i in freq.split('-')]
+        
+        if len(freq_range) !=2:
+             click.secho(f"\n -> '{freq}' could not be parsed. Please use the following format: 1-30.\n", fg = 'yellow', bold = True)
+             return
+        
     # get power 
     power_df = get_pmat(ctx.obj['index'], fft_duration = ctx.obj['fft_win'],
                freq_range = ctx.obj['fft_freq_range'], f_noise = ctx.obj['mains_noise'])
@@ -101,7 +105,7 @@ def stft(ctx, freq):
     
     
 @main.command()
-@click.argument('freq', type = str)
+@click.option('--freq', type = str, help = 'Enter frequency range, e.g. 1-30')
 @click.pass_context
 def plot(ctx, freq):
     """Enter plot menu"""
@@ -117,10 +121,14 @@ def plot(ctx, freq):
                     "Need to run 'stft' before plotting.\n", fg = 'yellow', bold = True)
         return
     
-    # convert string to list
-    freq_range = [int(i) for i in freq.split('_')]
-    
-    
+    # get frequency
+    if freq is not None:
+        freq_range = [int(i) for i in freq.split('-')]
+        
+        if len(freq_range) !=2:
+             click.secho(f"\n -> '{freq}' could not be parsed. Please use the following format: 1-30.\n", fg = 'yellow', bold = True)
+             return
+        
     # select from command list
     main_dropdown_list = ['PSD', 'individual PSDs', 'summary plot']
     title = 'Please select file for analysis: '
@@ -130,14 +138,16 @@ def plot(ctx, freq):
     index_df = pd.read_csv(ctx.obj['index_path'])
     power_df = pd.read_pickle(ctx.obj['power_mat_path'])
     
+    # get categories
+    
     # get melted power area
-    df = melted_power_area(index_df, power_df, freq_range, ['sex', 'treatment', 'brain_region'])
+    df = melted_power_area(index_df, power_df, ctx.obj['freq_ranges'], ['sex', 'treatment', 'brain_region'])
     
     # save to csv
-    df.to_csv(os.path.join(ctx.obj['search_path'], ctx.obj['melted_power_mat']), index = False)
+    df.to_csv(os.path.join(ctx.obj['search_path'], ctx.obj['melted_power_mat']))
     
     if option == 'summary plot':
-        graph = GridGraph(os.path.join(ctx.obj['search_path'], ctx.obj['melted_power_mat']))
+        graph = GridGraph(ctx.obj['search_path'], ctx.obj['melted_power_mat'])
         graph.draw_graph('violin')
     
     
