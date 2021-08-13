@@ -12,7 +12,7 @@ import numpy as np
 import os
 
 class GridGraph:
-    def __init__(self,path,filename):
+    def __init__(self,path,filename,data):
         """
         Creates an object that stores tidy data from .csv that can create a dynamic facet plot.
 
@@ -20,14 +20,19 @@ class GridGraph:
         ----------
         path : str, Full path of the directory containing the data to be graphed.
         filename : str, name of the .csv file to export. 
-
+        
+        
         Returns
         -------
         None.
 
         """
-        #import the csv file
-        self.data = pd.read_csv(os.path.join(path,filename),index_col=0)
+        self.kind='box'
+        self.first_time=True
+        #pass inputs to object
+        self.path=path
+        self.filename=filename
+        self.data = data
         #get the categories from the columns (exceptt the last one)
         self.param_list=list(self.data.columns[:-1])
         #the last column is the value to graph
@@ -36,6 +41,8 @@ class GridGraph:
         ind=self.param_list.index('freq')
         self.param_list[ind],self.param_list[0] = self.param_list[0],self.param_list[ind]
         self.pivot_params=self.param_list
+
+        
 
     def on_pick(self,event):
         """
@@ -61,9 +68,8 @@ class GridGraph:
             self.param_list.append(switched)
             # self.param_list[ind],self.param_list[-1] = self.param_list[-1],self.param_list[ind]#replace the click one with the last one
             # ind = self.param_list.index(switched)
-            
-            plt.close('all')
-            self.draw_graph()
+            # plt.close('all')
+            self.draw_graph(self.kind)
             return
         #if clicked on a graph title
         elif '|' in event.artist.get_text():
@@ -99,9 +105,7 @@ class GridGraph:
             #add to a concatenated df
             all_data=pd.concat([all_data,cond_df],axis=1)
         #export to csv 
-        all_data.to_csv(path+filename.split(".")[0]+"_"+var1+"_"+var2+".csv")
-            
-            
+        all_data.to_csv(self.path+self.filename.split(".")[0]+"_"+var1+"_"+var2+".csv")
         print("Exported!")
 
     
@@ -121,6 +125,7 @@ class GridGraph:
         None.
 
         """
+        self.kind=kind
         cats=['X:','Hue:','Col:','Row:']
         # pick the first 4 parameters
         if params != None: self.param_list = params
@@ -140,23 +145,25 @@ class GridGraph:
             ax.set_title(ax.get_title(),picker=5)
         #add clickable options for x,hue,row,col
         spacing=np.linspace(.2,.9,4)
-        fig=plt.gcf()
-        plt.figure(g.fig.number)
         plt.tight_layout(pad=2)
         for i,text in enumerate(graph_params):
             plt.figtext(spacing[i],.01,cats[i]+text,fontsize=10,picker=5,color='blue')
         #add helpful notes to figure
         plt.figtext(.01,.01,"Click a category to change")
         if len(self.param_list)>2:
-            plt.figtext(.4,.98,"Click a graph title to export",fontsize=12,fontweight='bold')
+            plt.figtext(.4,.97,"Click a graph title to export",fontsize=12,fontweight='bold')
         else:
-            plt.figtext(.4,.98,"Click to export",fontsize=12,fontweight='bold',picker=5)
+            plt.figtext(.4,.97,"Click to export",fontsize=12,fontweight='bold',picker=5)
         #add the click callback to the figure
-        fig.canvas.callbacks.connect('pick_event', self.on_pick)
-    
+        g.fig.canvas.callbacks.connect('pick_event', self.on_pick)
+        plt.show()
+
+
     
 if __name__ == '__main__':
     path= r"C:\Users\gweiss01\Downloads\\"
-    filename=r"melt_index1.csv"
-    graph=GridGraph(path,filename)
+    filename=r"melt_index.csv"
+    data=pd.read_csv(os.path.join(path,filename),index_col=0)
+    graph=GridGraph(path,filename,data)
     graph.draw_graph('violin')
+
