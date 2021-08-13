@@ -10,9 +10,11 @@ import os
 import yaml
 import click
 import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
 from pick import pick
 from filter_index import load_index
-from psd_analysis import get_pmat, melted_power_area
+from psd_analysis import get_pmat, melted_power_area, melted_psds
 from facet_plot_gui import GridGraph
 ########## ---------------------------------------------------------------- ##########
 
@@ -120,17 +122,9 @@ def plot(ctx, freq):
         click.secho(f"\n -> File '{ctx.obj['file_power_mat']}' was not found in '{ctx.obj['search_path']}'" + 
                     "Need to run 'stft' before plotting.\n", fg = 'yellow', bold = True)
         return
-    
-    # get frequency
-    if freq is not None:
-        freq_range = [int(i) for i in freq.split('-')]
-        
-        if len(freq_range) !=2:
-             click.secho(f"\n -> '{freq}' could not be parsed. Please use the following format: 1-30.\n", fg = 'yellow', bold = True)
-             return
         
     # select from command list
-    main_dropdown_list = ['PSD', 'individual PSDs', 'summary plot']
+    main_dropdown_list = ['mean PSDs', 'individual PSDs', 'summary plot']
     title = 'Please select file for analysis: '
     option, index = pick(main_dropdown_list, title, indicator = '-> ')
     
@@ -140,15 +134,30 @@ def plot(ctx, freq):
     
     # get categories
     
-    # get melted power area
-    df = melted_power_area(index_df, power_df, ctx.obj['freq_ranges'], ['sex', 'treatment', 'brain_region'])
-    
-    # save to csv
-    df.to_csv(os.path.join(ctx.obj['search_path'], ctx.obj['melted_power_mat']))
     
     if option == 'summary plot':
-        graph = GridGraph(ctx.obj['search_path'], ctx.obj['melted_power_mat'])
-        graph.draw_graph('violin')
+        
+        # get power area
+        data = melted_power_area(index_df, power_df, ctx.obj['freq_ranges'], ['sex', 'treatment', 'brain_region'])
+        
+        # Graph summary plot
+        GridGraph(ctx.obj['search_path'], ctx.obj['melted_power_mat'], data).draw_graph('violin')
+    
+    # get frequency
+    if freq is not None:
+        freq_range = [int(i) for i in freq.split('-')]
+        if len(freq_range) !=2:
+             click.secho(f"\n -> '{freq}' could not be parsed. Please use the following format: 1-30.\n", fg = 'yellow', bold = True)
+             return
+    else:
+        click.secho("\n -> 'Missing argument 'freq'. Please use the following format: --freq 1-30.\n", fg = 'yellow', bold = True)
+        return
+    
+    if option == 'mean PSDs':
+        df = melted_psds(index_df, power_df, freq_range, ['sex', 'treatment', 'brain_region'])
+        g = sns.FacetGrid(df.iloc[::5,:], hue='treatment', row='sex', col='brain_region', palette='plasma')
+        g.map(sns.lineplot, 'freq', 'power')
+        plt.show()
     
     
     
