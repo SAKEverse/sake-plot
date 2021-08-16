@@ -13,7 +13,7 @@ from stft import Stft, get_freq_index
 from get_data import AdiGet
 from filter_index import load_n_filter
 from tqdm import tqdm
-from facet_plot_gui import GridGraph
+# from facet_plot_gui import GridGraph
 from beartype import beartype
 from typing import TypeVar
 PandasDf = TypeVar('pandas.core.frame.DataFrame')
@@ -123,6 +123,48 @@ def melted_power_area(index_df:PandasDf, power_df:PandasDf, freqs:list, selected
     
     return df
 
+def melted_power_ratio(index_df:PandasDf, power_df:PandasDf, freqs:list, selected_categories:list):
+    """
+    Get power ratio and melt dataframe for seaborn plotting.
+
+    Parameters
+    ----------
+    index_df : PandasDf, experiment index
+    power_df : PandasDf, contains pmat and frequency vectors for every row of index_df
+    freqs : list, 2D list with frequency ranges for extraction of power area
+    selected_categories : list, columns that will be included in the melted
+
+    Returns
+    -------
+    df : PandasDf, melted df with power area and categories
+
+    """
+    # convert to numpy array
+    freqs = np.array(freqs)
+    
+    # create frequency column names
+    freq_columns = []
+    for i in range(freqs.shape[0]):
+        freq_columns.append(str(freqs[i,0]) + ' - ' + str(freqs[i,1]) + ' Hz')
+    
+    # create array for storage
+    power_array = np.empty((len(index_df), freqs.shape[0]))
+    for i in range(len(index_df)): # iterate over dataframe
+        
+        # get power across frequencies
+        breakpoint()
+        power_array[i,:] = np.divide(get_power_area(power_df['pmat'][i], power_df['freq'][i], freqs[0]),
+                                     get_power_area(power_df['pmat'][i], power_df['freq'][i], freqs[1]))
+        
+    # concatenate to array
+    index_df = pd.concat([index_df, pd.DataFrame(data = power_array, columns = freq_columns)], axis=1)
+        
+    # melt dataframe for seaborn plotting
+    df = pd.melt(index_df, id_vars = selected_categories, value_vars = freq_columns, var_name = 'freq', value_name = 'power_ratio',
+                 ignore_index=False)
+    
+    return df
+
 
 def melted_psds(index_df:PandasDf, power_df:PandasDf, freq_range:list, selected_categories:list):
     """
@@ -197,32 +239,33 @@ if __name__ == '__main__':
     index_df = load_n_filter(path, filter_conditions)
     
     # # save dataframe
-    # index_df.to_pickle(os.path.join(parent_folder, filename.replace('csv','pickle')))
+    index_df.to_pickle(os.path.join(parent_folder, filename.replace('csv','pickle')))
     
     # get pmat
     power_df = get_pmat(index_df)
     # power_df.to_pickle(os.path.join(parent_folder, 'power_' + filename.replace('csv','pickle')))
     
     # # remove mains noise and outliers!!!!!!!!!!!!!!!!!!!!!
+    df = melted_power_ratio(index_df, power_df, freqs, ['sex', 'treatment', 'brain_region'])
     
-    import seaborn as sns
+    # import seaborn as sns
     
-    # get melted power area
-    df = melted_power_area(index_df, power_df, freqs, ['sex', 'treatment', 'brain_region'])
-    # sns.catplot(data = df, x = 'freq', y = 'power_area', hue = 'treatment', col = 'sex', row = 'brain_region', kind = 'box')
+    # # get melted power area
+    # df = melted_power_area(index_df, power_df, freqs, ['sex', 'treatment', 'brain_region'])
+    # # sns.catplot(data = df, x = 'freq', y = 'power_area', hue = 'treatment', col = 'sex', row = 'brain_region', kind = 'box')
     
-    # get melted psd
-    df = melted_psds(index_df, power_df, [1,30], ['sex', 'treatment', 'brain_region'])
-    # g = sns.FacetGrid(df.iloc[::5,:], hue='treatment', row='sex', col='brain_region', palette='plasma')
-    # g.map(sns.lineplot, 'freq', 'power')
+    # # get melted psd
+    # df = melted_psds(index_df, power_df, [1,30], ['sex', 'treatment', 'brain_region'])
+    # # g = sns.FacetGrid(df.iloc[::5,:], hue='treatment', row='sex', col='brain_region', palette='plasma')
+    # # g.map(sns.lineplot, 'freq', 'power')
     
   
-    path = r'C:\Users\panton01\Desktop\pydsp_analysis'
-    filename = 'power_area_df.csv'
-    df.to_csv(os.path.join(path, filename), index = False)
+    # path = r'C:\Users\panton01\Desktop\pydsp_analysis'
+    # filename = 'power_area_df.csv'
+    # df.to_csv(os.path.join(path, filename), index = False)
     
-    graph = GridGraph(path, filename)
-    graph.draw_graph('violin')
+    # graph = GridGraph(path, filename)
+    # graph.draw_graph('violin')
 
 
 

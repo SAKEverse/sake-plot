@@ -6,16 +6,13 @@ Created on Wed Aug 11 13:10:37 2021
 """
 
 ########## ------------------------------- IMPORTS ------------------------ ##########
-import os
-import yaml
-import click
+import os, yaml, click
+from pick import pick
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from pick import pick
 from filter_index import load_index
-from psd_analysis import get_pmat, melted_power_area, melted_psds
-from facet_plot_gui import GridGraph
+from psd_analysis import get_pmat, melted_power_area, melted_power_ratio, melted_psds
 ########## ---------------------------------------------------------------- ##########
 
 
@@ -90,12 +87,12 @@ def stft(ctx, freq):
         freq_range = [int(i) for i in freq.split('-')]
         
         if len(freq_range) !=2:
-             click.secho(f"\n -> '{freq}' could not be parsed. Please use the following format: 1-30.\n", fg = 'yellow', bold = True)
-             return
+              click.secho(f"\n -> '{freq}' could not be parsed. Please use the following format: 1-30.\n", fg = 'yellow', bold = True)
+              return
         
     # get power 
     power_df = get_pmat(ctx.obj['index'], fft_duration = ctx.obj['fft_win'],
-               freq_range = ctx.obj['fft_freq_range'], f_noise = ctx.obj['mains_noise'])
+                freq_range = ctx.obj['fft_freq_range'], f_noise = ctx.obj['mains_noise'])
     
     # save power
     power_df.to_pickle(ctx.obj['power_mat_path'])
@@ -124,7 +121,8 @@ def plot(ctx, freq):
         return
         
     # select from command list
-    main_dropdown_list = ['mean PSDs', 'individual PSDs', 'summary plot and data export']
+    main_dropdown_list = ['mean PSDs', 'individual PSDs', 'summary plot and data export - (power area)',
+                          'summary plot and data export - (power ratio)']
     title = 'Please select file for analysis: '
     option, index = pick(main_dropdown_list, title, indicator = '-> ')
     
@@ -133,23 +131,36 @@ def plot(ctx, freq):
     power_df = pd.read_pickle(ctx.obj['power_mat_path'])
     
     # get categories
+    categories = list(index_df.columns[index_df.columns.get_loc('stop_time')+1:])
     
-    
-    if option == 'summary plot and data export':
+    if option == 'summary plot and data export - (power area)':
+        from facet_plot_gui import GridGraph
         
         # get power area
-        data = melted_power_area(index_df, power_df, ctx.obj['freq_ranges'], ['sex', 'treatment', 'brain_region'])
+        data = melted_power_area(index_df, power_df, ctx.obj['freq_ranges'], categories)
         
         # Graph interactive summary plot
         GridGraph(ctx.obj['search_path'], ctx.obj['melted_power_mat'], data).draw_graph(ctx.obj['summary_plot_type'])
         return
     
+    if option == 'summary plot and data export - (power ratio)':
+        from facet_plot_gui import GridGraph
+        
+        # get power area
+        data = melted_power_ratio(index_df, power_df, [[6,12],[2,5]], categories)
+        
+        # Graph interactive summary plot
+        GridGraph(ctx.obj['search_path'], ctx.obj['melted_power_mat'], data).draw_graph(ctx.obj['summary_plot_type'])
+        return
+    
+    
+    
     # get frequency
     if freq is not None:
         freq_range = [int(i) for i in freq.split('-')]
         if len(freq_range) !=2:
-             click.secho(f"\n -> '{freq}' could not be parsed. Please use the following format: 1-30.\n", fg = 'yellow', bold = True)
-             return
+              click.secho(f"\n -> '{freq}' could not be parsed. Please use the following format: 1-30.\n", fg = 'yellow', bold = True)
+              return
     else:
         click.secho("\n -> 'Missing argument 'freq'. Please use the following format: --freq 1-30.\n", fg = 'yellow', bold = True)
         return
