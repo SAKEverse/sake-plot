@@ -20,3 +20,4 @@ mains_noise:
 - 61
 melted_power_mat: power_area.csv
 search_path: C:\Users\panton01\Desktop\pydsp_analysis
+summary_plot_type: violin

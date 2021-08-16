@@ -124,7 +124,7 @@ def plot(ctx, freq):
         return
         
     # select from command list
-    main_dropdown_list = ['mean PSDs', 'individual PSDs', 'summary plot']
+    main_dropdown_list = ['mean PSDs', 'individual PSDs', 'summary plot and data export']
     title = 'Please select file for analysis: '
     option, index = pick(main_dropdown_list, title, indicator = '-> ')
     
@@ -135,16 +135,13 @@ def plot(ctx, freq):
     # get categories
     
     
-    if option == 'summary plot':
+    if option == 'summary plot and data export':
         
         # get power area
         data = melted_power_area(index_df, power_df, ctx.obj['freq_ranges'], ['sex', 'treatment', 'brain_region'])
         
         # Graph interactive summary plot
-        click.echo(str(os.path.join(ctx.obj['search_path'], ctx.obj['melted_power_mat'])))
-        GridGraph(ctx.obj['search_path'], ctx.obj['melted_power_mat'], data).draw_graph('violin')
-        
-        # plot_obj
+        GridGraph(ctx.obj['search_path'], ctx.obj['melted_power_mat'], data).draw_graph(ctx.obj['summary_plot_type'])
         return
     
     # get frequency
