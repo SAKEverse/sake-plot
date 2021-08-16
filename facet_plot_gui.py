@@ -59,7 +59,7 @@ class GridGraph:
         None.
 
         """
-        pivot_params=self.param_list
+        pivot_params=self.param_list.copy()
         var1=''
         var2=''
         #if clicked on a graphing parameter
@@ -139,7 +139,7 @@ class GridGraph:
             default[i]=param
         #graph the facet plot with the first 4 categories
         x,hue,col,row = default
-        g=sns.catplot(data = self.data, x = x, y = self.graph_value, hue = hue, col = col, row = row, kind = kind,height=4,aspect=6/4)
+        g=sns.catplot(data = self.data, x = x, y = self.graph_value, hue = hue, col = col, row = row, kind = kind,height=3.5,aspect=6/4)
         #make each plot title clickable
         axes=g.axes.flat
         for ax in axes:
