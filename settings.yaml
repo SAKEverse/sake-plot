@@ -18,5 +18,5 @@ freq_ranges:
 mains_noise:
 - 59
 - 61
-melted_power_mat: melted_power_area.csv
+melted_power_mat: power_area.csv
 search_path: C:\Users\panton01\Desktop\pydsp_analysis

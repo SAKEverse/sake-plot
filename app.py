@@ -140,8 +140,12 @@ def plot(ctx, freq):
         # get power area
         data = melted_power_area(index_df, power_df, ctx.obj['freq_ranges'], ['sex', 'treatment', 'brain_region'])
         
-        # Graph summary plot
+        # Graph interactive summary plot
+        click.echo(str(os.path.join(ctx.obj['search_path'], ctx.obj['melted_power_mat'])))
         GridGraph(ctx.obj['search_path'], ctx.obj['melted_power_mat'], data).draw_graph('violin')
+        
+        # plot_obj
+        return
     
     # get frequency
     if freq is not None:

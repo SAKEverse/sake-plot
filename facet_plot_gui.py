@@ -30,14 +30,18 @@ class GridGraph:
         """
         self.kind='box'
         self.first_time=True
+        
         #pass inputs to object
         self.path=path
         self.filename=filename
         self.data = data
         #get the categories from the columns (exceptt the last one)
+        
         self.param_list=list(self.data.columns[:-1])
         #the last column is the value to graph
+        
         self.graph_value = self.data.columns[-1]
+        
         #swtich the freuency to the fisrt value (hue)
         ind=self.param_list.index('freq')
         self.param_list[ind],self.param_list[0] = self.param_list[0],self.param_list[ind]
@@ -62,27 +66,27 @@ class GridGraph:
         pivot_params=self.param_list.copy()
         var1=''
         var2=''
-        #if clicked on a graphing parameter
+        # if clicked on a graphing parameter
         if ":" in event.artist.get_text():
             switched=event.artist.get_text().split(":")[1]
-            self.param_list.remove(switched)#put the clicked on at the end
+            self.param_list.remove(switched)# put the clicked on at the end
             self.param_list.append(switched)
-            # self.param_list[ind],self.param_list[-1] = self.param_list[-1],self.param_list[ind]#replace the click one with the last one
-            # ind = self.param_list.index(switched)
-            # plt.close('all')
             self.draw_graph(self.kind)
             return
-        #if clicked on a graph title
+        # if clicked on a graph title
         elif '|' in event.artist.get_text():
-                #parse the string for categories and variables
+            
+                # parse the string for categories and variables
                 str1,str2=event.artist.axes.get_title().split(r" | ")
                 cat1,var1=str1.split(" = ")
                 cat2,var2=str2.split(" = ")
-                #create index by filtering for both variables
+                
+                # create index by filtering for both variables
                 index1=self.data[cat1]==var1
                 index2=self.data[cat2]==var2
                 export_index=index1&index2
-                #update the list of cats to pivot back to
+                
+                # update the list of cats to pivot back to
                 pivot_params.remove(cat1)
                 pivot_params.remove(cat2)
         elif " = " in event.artist.get_text():
@@ -94,20 +98,25 @@ class GridGraph:
         
         
         all_data=pd.DataFrame()
-        #loop through the variables in the second category
+        # loop through the variables in the second category
         for cond in self.data[pivot_params[1]].unique():
-            #make new table with the filter index
+            
+            # make new table with the filter index
             filtered=self.data[export_index & (self.data[pivot_params[1]]==cond)]
-            #melt the table by the first category, creating a separate table for each var in the second category
+            
+            # melt the table by the first category, creating a separate table for each var in the second category
             cond_df=filtered.pivot(columns=self.pivot_params[0],values=self.graph_value)
             cond_df=cond_df[self.data['freq'].unique()]
             cond_df = cond_df.transpose()
             cond_df.columns = [cond]*cond_df.shape[1]
-            #add to a concatenated df
+            
+            # add to a concatenated df
             all_data=pd.concat([all_data,cond_df],axis=1)
-        #export to csv 
-        all_data.to_csv(self.path+self.filename.split(".")[0]+"_"+var1+"_"+var2+".csv")
-        print("Exported!")
+            
+        # export to csv 
+        save_path = os.path.join(self.path, self.filename.split(".")[0]+"_"+var1+"_"+var2+".csv")
+        all_data.to_csv(save_path)
+        print("-> Exported to:" + str(save_path) + "\n")
 
     
     def draw_graph(self,kind='box',params=None):
