@@ -9,10 +9,7 @@ Created on Wed Aug 11 13:10:37 2021
 import os, yaml, click
 from pick import pick
 import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
 from filter_index import load_index
-from psd_analysis import get_pmat, melted_power_area, melted_power_ratio, melted_psds
 ########## ---------------------------------------------------------------- ##########
 
 
@@ -76,6 +73,7 @@ def setpath(ctx, path):
 @click.pass_context
 def stft(ctx, freq):
     """Runs the Short-time Fourier Transform"""
+    from psd_analysis import get_pmat
 
     # check if index file was not found
     if not ctx.obj['index_present']:
@@ -108,6 +106,8 @@ def stft(ctx, freq):
 @click.pass_context
 def plot(ctx, freq):
     """Enter plot menu"""
+    
+    from psd_analysis import melted_power_area, melted_power_ratio, melted_psds, plot_mean_psds
     
     # check if index file exists
     if not ctx.obj['index_present']:
@@ -146,8 +146,8 @@ def plot(ctx, freq):
     if option == 'summary plot and data export - (power ratio)':
         from facet_plot_gui import GridGraph
         
-        # get power area
-        data = melted_power_ratio(index_df, power_df, [[6,12],[2,5]], categories)
+        # get power ratio
+        data = melted_power_ratio(index_df, power_df,  ctx.obj['freq_ratios'], categories)
         
         # Graph interactive summary plot
         GridGraph(ctx.obj['search_path'], ctx.obj['melted_power_mat'], data).draw_graph(ctx.obj['summary_plot_type'])
@@ -167,10 +167,7 @@ def plot(ctx, freq):
     
     if option == 'mean PSDs':
         df = melted_psds(index_df, power_df, freq_range, ['sex', 'treatment', 'brain_region'])
-        g = sns.FacetGrid(df.iloc[::5,:], hue='treatment', row='sex', col='brain_region', palette='plasma')
-        g.map(sns.lineplot, 'freq', 'power', ci = 'sd')
-        plt.show()
-    
+        plot_mean_psds(df)
     
     
 

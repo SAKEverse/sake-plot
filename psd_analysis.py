@@ -6,14 +6,13 @@ Created on Mon Aug  9 13:24:36 2021
 """
 
 ########## ------------------------------- IMPORTS ------------------------ ##########
-import os
 import numpy as np
 import pandas as pd
 from stft import Stft, get_freq_index
 from get_data import AdiGet
-from filter_index import load_n_filter
 from tqdm import tqdm
-# from facet_plot_gui import GridGraph
+import matplotlib.pyplot as plt
+import seaborn as sns
 from beartype import beartype
 from typing import TypeVar
 PandasDf = TypeVar('pandas.core.frame.DataFrame')
@@ -37,6 +36,7 @@ def get_power_area(pmat:np.ndarray, freq_vec:np.ndarray, freqs:np.ndarray) -> np
     """
     
     # get frequency index
+    freqs = freqs.reshape([-1, 2]) # reshape to 2D
     freq_idx = get_freq_index(freq_vec, freqs)
     
     # init empty array to store powers
@@ -44,6 +44,34 @@ def get_power_area(pmat:np.ndarray, freq_vec:np.ndarray, freqs:np.ndarray) -> np
     for i in range(freq_idx.shape[0]):
         powers[i] = np.sum(pmat[freq_idx[i,0]:freq_idx[i,1],:])
     
+    return powers
+
+@beartype
+def get_power_ratio(pmat:np.ndarray, freq_vec:np.ndarray, freqs:np.ndarray) -> np.ndarray:
+    """
+    Get power ratio across frequencies
+
+    Parameters
+    ----------
+    pmat : np.ndarray, 2D array containing power values rows = frequency bins and cols = time bins
+    freq_vec : np.ndarray, vector with real frequency values
+    freqs : np.ndarray, 3D array with frequencies, 1d = frequency ratios, 2d [lower to upper freq range],3d = [start, stop]
+
+    Returns
+    -------
+    powers : 1D np.array, len = frequency ranges 
+
+    """
+    
+    # get frequency index
+    freqs = freqs.reshape([-1,2,2]) # reshape to 3D
+    freq_idx = get_freq_index(freq_vec, freqs)
+    
+    # init empty array to store powers
+    powers = np.zeros(freq_idx.shape[0])
+    for i in range(freq_idx.shape[0]):
+        powers[i] = np.divide(np.sum(pmat[freq_idx[i,0,0]:freq_idx[i,0,1],:]),
+                              np.sum(pmat[freq_idx[i,1,0]:freq_idx[i,1,1],:]))                           
     return powers
         
 @beartype
@@ -151,10 +179,8 @@ def melted_power_ratio(index_df:PandasDf, power_df:PandasDf, freqs:list, selecte
     power_array = np.empty((len(index_df), freqs.shape[0]))
     for i in range(len(index_df)): # iterate over dataframe
         
-        # get power across frequencies
-        breakpoint()
-        power_array[i,:] = np.divide(get_power_area(power_df['pmat'][i], power_df['freq'][i], freqs[0]),
-                                     get_power_area(power_df['pmat'][i], power_df['freq'][i], freqs[1]))
+            # get power across frequencies
+            power_array[i,:] = get_power_ratio(power_df['pmat'][i], power_df['freq'][i], freqs)
         
     # concatenate to array
     index_df = pd.concat([index_df, pd.DataFrame(data = power_array, columns = freq_columns)], axis=1)
@@ -217,41 +243,54 @@ def melted_psds(index_df:PandasDf, power_df:PandasDf, freq_range:list, selected_
 
     return df
 
+def plot_mean_psds(df):
+    g = sns.FacetGrid(df.iloc[::5,:], hue='treatment', row='sex', col='brain_region', palette='plasma')
+    g.map(sns.lineplot, 'freq', 'power', ci = 'sd')
+    plt.legend()
+    plt.show()
+    
 
-if __name__ == '__main__':
+
+# if __name__ == '__main__':
+    
+    # import os, yaml
+    # from filter_index import load_n_filter
+    # from facet_plot_gui import GridGraph
     
     ### ---------------------- USER INPUT -------------------------------- ###
     
-    # define path and conditions for filtering
-    filename = 'file_index.csv'
-    parent_folder = r'C:\Users\panton01\Desktop\pydsp_analysis'
-    path =  os.path.join(parent_folder, filename)
+    # # define path and conditions for filtering
+    # filename = 'file_index.csv'
+    # parent_folder = r'C:\Users\panton01\Desktop\pydsp_analysis'
+    # path =  os.path.join(parent_folder, filename)
     
-    # enter filter conditions
-    filter_conditions = {'brain_region':['bla', 'pfc'], 'treatment':['baseline','vehicle']} #
+    # # enter filter conditions
+    # filter_conditions = {'brain_region':['bla', 'pfc'], 'treatment':['baseline','vehicle']} #
     
-    # define frequencies of interest
-    freqs = np.array([[2,5], [6,12], [15,30], [31,70], [80,120]])
+    # # define frequencies of interest
+    # with open('settings.yaml', 'r') as file:
+    #     settings = yaml.load(file, Loader=yaml.FullLoader)
     
     #### ---------------------------------------------------------------- ####
     
     # filter index based on conditions
-    index_df = load_n_filter(path, filter_conditions)
+    # index_df = load_n_filter(path, filter_conditions)
     
     # # save dataframe
-    index_df.to_pickle(os.path.join(parent_folder, filename.replace('csv','pickle')))
+    # index_df.to_pickle(os.path.join(parent_folder, filename.replace('csv','pickle')))
     
     # get pmat
-    power_df = get_pmat(index_df)
+    # power_df = get_pmat(index_df)
     # power_df.to_pickle(os.path.join(parent_folder, 'power_' + filename.replace('csv','pickle')))
+    # power_df = pd.read_pickle(r'C:\Users\panton01\Desktop\pydsp_analysis\power_mat.pickle')
     
-    # # remove mains noise and outliers!!!!!!!!!!!!!!!!!!!!!
-    df = melted_power_ratio(index_df, power_df, freqs, ['sex', 'treatment', 'brain_region'])
+    # # remove mains noise and outliers!!!!!!!!!!!!!!!!!!!!! 
+    # df = melted_power_ratio(index_df, power_df, settings['freq_ratios'], ['sex', 'treatment', 'brain_region']) #
     
     # import seaborn as sns
     
     # # get melted power area
-    # df = melted_power_area(index_df, power_df, freqs, ['sex', 'treatment', 'brain_region'])
+    # df = melted_power_area(index_df, power_df, settings['freq_ranges'], ['sex', 'treatment', 'brain_region'])
     # # sns.catplot(data = df, x = 'freq', y = 'power_area', hue = 'treatment', col = 'sex', row = 'brain_region', kind = 'box')
     
     # # get melted psd
