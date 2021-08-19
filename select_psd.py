@@ -5,9 +5,9 @@ Created on Tue Apr 14 10:37:05 2020
 """
 
 ### ---------------------- IMPORTS ---------------------- ###
-import os
+# import os
 import numpy as np
-import pandas as pd
+# import pandas as pd
 import matplotlib.pyplot as plt
 ### ----------------------------------------------------- ###
 
@@ -19,11 +19,13 @@ class matplotGui(object):
     
     ind = 0 # set internal counter
        
-    def __init__(self, save_path, index_df, power_df):
+    def __init__(self, settings, index_df, power_df):
 
-        
+        # get values from dictionary
+        for key, value in settings.items():
+               setattr(self, key, value)
+
         # pass object attributes to class
-        self.save_path = save_path
         self.power_df = power_df                      
         self.index_df = index_df
         
@@ -63,12 +65,11 @@ class matplotGui(object):
         # drop extra columns
         self.index_df = self.index_df.drop(columns = ['accepted','facearray'])
         
-        # save curated index file
-        self.index_df.to_csv('file_index_accepted.csv')
-        self.power_df.to_pickle('power_mat_accepted.pickle')
-        # save curated power mat file
+        # save verified index and power_df file
+        self.index_df.to_csv(self.index_verified_path, index = False)
+        self.power_df.to_pickle(self.power_mat_verified_path)
 
-        print('PSDs were saved.\n')    
+        print(f"Verified PSDs were saved in '{self.search_path}'.\n")    
         
         
     def get_index(self):
@@ -80,11 +81,11 @@ class matplotGui(object):
         """
         
         # reset counter when limits are exceeded
-        if self.ind >= len(index_df):
+        if self.ind >= len(self.index_df):
             self.ind = 0 
             
         elif self.ind < 0:
-            self.ind = len(index_df)-1
+            self.ind = len(self.index_df)-1
        
         # set counter to internal counter
         self.i = self.ind
@@ -160,46 +161,46 @@ class matplotGui(object):
     #     self.fig.canvas.draw()
 
 
-if __name__ == '__main__':
-    import yaml
-    from load_index import load_index
-    from matplotlib.widgets import Button, SpanSelector, TextBox
-        # define path and conditions for filtering
-    filename = 'file_index.csv'
-    parent_folder = r'C:\Users\panton01\Desktop\pydsp_analysis'
-    path =  os.path.join(parent_folder, filename)
+# if __name__ == '__main__':
+#     import yaml
+#     from load_index import load_index
+#     from matplotlib.widgets import Button, SpanSelector, TextBox
+#         # define path and conditions for filtering
+#     filename = 'file_index.csv'
+#     parent_folder = r'C:\Users\panton01\Desktop\pydsp_analysis'
+#     path =  os.path.join(parent_folder, filename)
     
-    # enter filter conditions
-    filter_conditions = {'brain_region':['bla', 'pfc'], 'treatment':['baseline','vehicle']} #
+#     # enter filter conditions
+#     filter_conditions = {'brain_region':['bla', 'pfc'], 'treatment':['baseline','vehicle']} #
     
-    # define frequencies of interest
-    with open('settings.yaml', 'r') as file:
-        settings = yaml.load(file, Loader=yaml.FullLoader)
+#     # define frequencies of interest
+#     with open('settings.yaml', 'r') as file:
+#         settings = yaml.load(file, Loader=yaml.FullLoader)
     
-    #### ---------------------------------------------------------------- ####
+#     #### ---------------------------------------------------------------- ####
     
-    # load index and power dataframe
-    index_df = load_index(path)
-    power_df = pd.read_pickle(r'C:\Users\panton01\Desktop\pydsp_analysis\power_mat.pickle')
+#     # load index and power dataframe
+#     index_df = load_index(path)
+#     power_df = pd.read_pickle(r'C:\Users\panton01\Desktop\pydsp_analysis\power_mat.pickle')
        
-    # init gui object
-    callback = matplotGui(parent_folder, index_df, power_df)
-    plt.subplots_adjust(bottom=0.15) # create space for buttons
+#     # init gui object
+#     callback = matplotGui(settings, index_df, power_df)
+#     plt.subplots_adjust(bottom=0.15) # create space for buttons
     
-    # add title and labels
-    callback.fig.suptitle('Select PSDs', fontsize=12)        # title
-    callback.fig.text(0.5, 0.09,'Frequency (Hz)', ha="center")                                          # xlabel
-    callback.fig.text(.02, .5, 'Power (V^2/Hz)', ha='center', va='center', rotation='vertical')         # ylabel
-    callback.fig.text(0.9, 0.04,'**** KEY ** Previous : <-, Next: ->, Accept: Y, Reject: N ****' ,      # move/accept labels
-                      ha="right", bbox=dict(boxstyle="square", ec=(1., 1., 1.), fc=(0.9, 0.9, 0.9),))              
+#     # add title and labels
+#     callback.fig.suptitle('Select PSDs', fontsize=12)        # title
+#     callback.fig.text(0.5, 0.09,'Frequency (Hz)', ha="center")                                          # xlabel
+#     callback.fig.text(.02, .5, 'Power (V^2/Hz)', ha='center', va='center', rotation='vertical')         # ylabel
+#     callback.fig.text(0.9, 0.04,'**** KEY ** Previous : <-, Next: ->, Accept: Y, Reject: N ****' ,      # move/accept labels
+#                       ha="right", bbox=dict(boxstyle="square", ec=(1., 1., 1.), fc=(0.9, 0.9, 0.9),))              
                                                     
-    # add key press
-    idx_out = callback.fig.canvas.mpl_connect('key_press_event', callback.keypress)
+#     # add key press
+#     idx_out = callback.fig.canvas.mpl_connect('key_press_event', callback.keypress)
     
-    # set useblit True on gtkagg for enhanced performance
-    span = SpanSelector(callback.axs, callback.keypress, 'horizontal', useblit=True,
-        rectprops=dict(alpha=0.5, facecolor='red'))
-    plt.show()
+#     # set useblit True on gtkagg for enhanced performance
+#     # span = SpanSelector(callback.axs, callback.keypress, 'horizontal', useblit=True,
+#     #     rectprops=dict(alpha=0.5, facecolor='red'))
+#     # plt.show()
 
 
 

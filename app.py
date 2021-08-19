@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Wed Aug 11 13:10:37 2021
@@ -7,7 +8,6 @@ Created on Wed Aug 11 13:10:37 2021
 
 ########## ------------------------------- IMPORTS ------------------------ ##########
 import os, yaml, click
-from pick import pick
 import pandas as pd
 from filter_index import load_index
 ########## ---------------------------------------------------------------- ##########
@@ -50,8 +50,13 @@ def main(ctx):
     ctx.obj.update({'power_mat_path': os.path.join(ctx.obj['search_path'], ctx.obj['file_power_mat'])})
     if os.path.isfile(ctx.obj['power_mat_path']):
         ctx.obj.update({'power_present':1})
+    
+    ############### ADD VERIFICATION #########################
+    ctx.obj.update({'index_verified_path': os.path.join(ctx.obj['search_path'], ctx.obj['file_index_verified'])})
+    ctx.obj.update({'power_mat_verified_path': os.path.join(ctx.obj['search_path'], ctx.obj['file_power_mat_verified'])})
+    
             
-  
+### ------------------------------ SET PATH ------------------------------ ### 
 @main.command()
 @click.argument('path', type = str)
 @click.pass_context
@@ -67,7 +72,7 @@ def setpath(ctx, path):
     click.secho(f"\n -> Path was set to:'{path}'.\n", fg = 'green', bold = True)
 
 
-    
+### ------------------------------ STFT ---------------------------------- ###     
 @main.command()
 @click.option('--freq', type = str, help = 'Enter frequency range, e.g. 1-30')
 @click.pass_context
@@ -92,13 +97,45 @@ def stft(ctx, freq):
     power_df = get_pmat(ctx.obj['index'], fft_duration = ctx.obj['fft_win'],
                 freq_range = ctx.obj['fft_freq_range'], f_noise = ctx.obj['mains_noise'])
     
-    # save power
+    # save index and power
+    ctx.obj['index'].to_csv(ctx.obj['index_verified_path'], index = False)
     power_df.to_pickle(ctx.obj['power_mat_path'])
+    power_df.to_pickle(ctx.obj['power_mat_verified_path'])
     
     # get freq_range for display
     freq_range = '-'.join(list(map(str, ctx.obj['fft_freq_range']))) + ' Hz'
     
-    click.secho(f"\n -> Analysis completed: {freq_range} and file saved in:'{ctx.obj['power_mat_path']}'.\n", fg = 'green', bold = True)
+    click.secho(f"\n -> Analysis completed: {freq_range} and file saved in:'{ctx.obj['search_path']}'.\n", fg = 'green', bold = True)
+
+### ------------------------------ STFT ---------------------------------- ###      
+@main.command()
+@click.pass_context
+def verify(ctx):
+    """
+    Manual verification of PSDs
+    """
+    import matplotlib.pyplot as plt
+    from select_psd import matplotGui
+    
+    # load index and power mat
+    index_df = pd.read_csv(ctx.obj['index_verified_path'])
+    power_df = pd.read_pickle(ctx.obj['power_mat_path'])
+    
+    # init gui object
+    callback = matplotGui(ctx.obj, index_df, power_df)
+    plt.subplots_adjust(bottom=0.15) # create space for buttons
+    
+    # add title and labels
+    callback.fig.suptitle('Select PSDs', fontsize=12)        # title
+    callback.fig.text(0.5, 0.09,'Frequency (Hz)', ha="center")                                          # xlabel
+    callback.fig.text(.02, .5, 'Power (V^2/Hz)', ha='center', va='center', rotation='vertical')         # ylabel
+    callback.fig.text(0.9, 0.04,'**** KEY ** Previous : <-, Next: ->, Accept: Y, Reject: N ****' ,      # move/accept labels
+                      ha="right", bbox=dict(boxstyle="square", ec=(1., 1., 1.), fc=(0.9, 0.9, 0.9),))              
+                                                    
+    # add key press
+    callback.fig.canvas.mpl_connect('key_press_event', callback.keypress)
+    plt.show()
+
     
     
 @main.command()
@@ -108,6 +145,7 @@ def plot(ctx, freq):
     """Enter plot menu"""
     
     from psd_analysis import melted_power_area, melted_power_ratio, melted_psds, plot_mean_psds
+    from pick import pick
     
     # check if index file exists
     if not ctx.obj['index_present']:
@@ -127,8 +165,8 @@ def plot(ctx, freq):
     option, index = pick(main_dropdown_list, title, indicator = '-> ')
     
     # load index and power mat
-    index_df = pd.read_csv(ctx.obj['index_path'])
-    power_df = pd.read_pickle(ctx.obj['power_mat_path'])
+    index_df = pd.read_csv(ctx.obj['index_verified_path'])
+    power_df = pd.read_pickle(ctx.obj['power_mat_verified_path'])
     
     # get categories
     categories = list(index_df.columns[index_df.columns.get_loc('stop_time')+1:])
@@ -152,8 +190,6 @@ def plot(ctx, freq):
         # Graph interactive summary plot
         GridGraph(ctx.obj['search_path'], ctx.obj['melted_power_mat'], data).draw_graph(ctx.obj['summary_plot_type'])
         return
-    
-    
     
     # get frequency
     if freq is not None:

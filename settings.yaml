@@ -3,7 +3,9 @@ fft_freq_range:
 - 150
 fft_win: 5
 file_index: file_index.csv
+file_index_verified: file_index_verified.csv
 file_power_mat: power_mat.pickle
+file_power_mat_verified: power_mat_verified.pickle
 freq_ranges:
 - - 2
   - 5
@@ -24,7 +26,6 @@ freq_ratios:
     - 30
   - - 40
     - 70
-
 mains_noise:
 - 59
 - 61

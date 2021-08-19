@@ -253,13 +253,13 @@ def plot_mean_psds(df):
 
 # if __name__ == '__main__':
     
-    # import os, yaml
-    # from filter_index import load_n_filter
+#     import os, yaml
+#     from load_index import load_index
     # from facet_plot_gui import GridGraph
     
     ### ---------------------- USER INPUT -------------------------------- ###
     
-    # # define path and conditions for filtering
+    # define path and conditions for filtering
     # filename = 'file_index.csv'
     # parent_folder = r'C:\Users\panton01\Desktop\pydsp_analysis'
     # path =  os.path.join(parent_folder, filename)
@@ -274,7 +274,7 @@ def plot_mean_psds(df):
     #### ---------------------------------------------------------------- ####
     
     # filter index based on conditions
-    # index_df = load_n_filter(path, filter_conditions)
+    # index_df = load_index(path)
     
     # # save dataframe
     # index_df.to_pickle(os.path.join(parent_folder, filename.replace('csv','pickle')))
