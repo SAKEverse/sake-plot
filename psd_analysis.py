@@ -192,7 +192,7 @@ def melted_power_ratio(index_df:PandasDf, power_df:PandasDf, freqs:list, selecte
     return df
 
 
-def melted_psds(index_df:PandasDf, power_df:PandasDf, freq_range:list, selected_categories:list):
+def melted_psds(index_df:PandasDf, power_df:PandasDf, freq_range:list, selected_categories:list): ## don't drop file index
     """
     Get PSD and melt dataframe for seaborn plotting.
 

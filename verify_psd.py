@@ -34,11 +34,13 @@ class matplotGui(object):
         self.index_df['facearray'] = 'w'
         
         # create figure and axis
-        self.fig, self.axs = plt.subplots(1, 1, sharex = False, figsize=(8,8))
+        self.fig, self.axs = plt.subplots(2, 1, sharex = False, figsize=(8,8))
 
         # remove top and right axis
-        self.axs.spines["top"].set_visible(False)
-        self.axs.spines["right"].set_visible(False)
+        self.axs[0].spines["top"].set_visible(False)
+        self.axs[0].spines["right"].set_visible(False)
+        self.axs[1].spines["top"].set_visible(False)
+        self.axs[1].spines["right"].set_visible(False)
             
         # create first plot
         self.plot_data()
@@ -104,17 +106,27 @@ class matplotGui(object):
         self.get_index()
 
         # clear graph
-        self.axs.clear() 
+        self.axs[0].clear()
+        self.axs[1].clear() 
         
         # get PSD and SEM
         psd = np.mean(self.power_df['pmat'][self.i], axis = 1)
         sem = np.std(self.power_df['pmat'][self.i], axis = 1) / np.sqrt(self.power_df['pmat'][self.i].shape[1])
+        time_plot = np.mean(self.power_df['pmat'][self.i], axis = 0)
+        sem_time = np.std(self.power_df['pmat'][self.i], axis = 0) / np.sqrt(self.power_df['pmat'][self.i].shape[0])
+        
+        # plot time
+        self.axs[0].plot(time_plot, color='black', linewidth=1.5, alpha=0.9, label = self.index_df.index[self.i])
+        self.axs[0].fill_between(time_plot+sem_time, time_plot-sem_time, color = 'gray')
+        self.axs[0].set_facecolor(self.index_df['facearray'][self.i]);
+        self.axs[0].legend(loc = 'upper right')
+        self.axs[0].set_xlabel('Time Bin')
         
         # plot new graph
-        self.axs.plot(self.power_df['freq'][self.i], psd, color='black', linewidth=1.5, alpha=0.9, label = self.index_df.index[self.i])
-        self.axs.fill_between(self.power_df['freq'][self.i], psd+sem, psd-sem, color = 'gray')
-        self.axs.set_facecolor(self.index_df['facearray'][self.i]);
-        self.axs.legend(loc = 'upper right')
+        self.axs[1].plot(self.power_df['freq'][self.i], psd, color='black', linewidth=1.5, alpha=0.9, label = self.index_df.index[self.i])
+        self.axs[1].fill_between(self.power_df['freq'][self.i], psd+sem, psd-sem, color = 'gray')
+        self.axs[1].set_facecolor(self.index_df['facearray'][self.i]);
+        
         
         self.fig.canvas.draw() # draw
 
@@ -132,7 +144,7 @@ class matplotGui(object):
         if event.key == 'y':
            self.index_df.at[self.i, 'facearray'] = 'palegreen'
            self.index_df.at[self.i, 'accepted'] = 1
-           self.axs.set_facecolor('palegreen')
+           self.axs[0].set_facecolor('palegreen')
            plt.draw()
            plt.pause(0.2)
            self.ind += 1 # add one to class index
@@ -140,7 +152,7 @@ class matplotGui(object):
           
         if event.key == 'n':
             self.index_df.at[self.i, 'facearray'] = 'salmon'
-            self.axs.set_facecolor('salmon')
+            self.axs[0].set_facecolor('salmon')
             self.index_df.at[self.i, 'accepted'] = 0
             plt.draw()
             plt.pause(0.2)
@@ -174,46 +186,47 @@ class matplotGui(object):
     #     self.fig.canvas.draw()
 
 
-# if __name__ == '__main__':
-#     import yaml
-#     from load_index import load_index
-#     from matplotlib.widgets import Button, SpanSelector, TextBox
-#         # define path and conditions for filtering
-#     filename = 'file_index.csv'
-#     parent_folder = r'C:\Users\panton01\Desktop\pydsp_analysis'
-#     path =  os.path.join(parent_folder, filename)
+if __name__ == '__main__':
+    import yaml,os
+    import pandas as pd
+    from load_index import load_index
+    from matplotlib.widgets import Button, SpanSelector, TextBox
+        # define path and conditions for filtering
+    filename = 'file_index.csv'
+    parent_folder = r'C:\Users\panton01\Desktop\pydsp_analysis'
+    path =  os.path.join(parent_folder, filename)
     
-#     # enter filter conditions
-#     filter_conditions = {'brain_region':['bla', 'pfc'], 'treatment':['baseline','vehicle']} #
+    # enter filter conditions
+    filter_conditions = {'brain_region':['bla', 'pfc'], 'treatment':['baseline','vehicle']} #
     
-#     # define frequencies of interest
-#     with open('settings.yaml', 'r') as file:
-#         settings = yaml.load(file, Loader=yaml.FullLoader)
+    # define frequencies of interest
+    with open('settings.yaml', 'r') as file:
+        settings = yaml.load(file, Loader=yaml.FullLoader)
     
-#     #### ---------------------------------------------------------------- ####
+    #### ---------------------------------------------------------------- ####
     
-#     # load index and power dataframe
-#     index_df = load_index(path)
-#     power_df = pd.read_pickle(r'C:\Users\panton01\Desktop\pydsp_analysis\power_mat.pickle')
+    # load index and power dataframe
+    index_df = load_index(path)
+    power_df = pd.read_pickle(r'C:\Users\panton01\Desktop\pydsp_analysis\power_mat.pickle')
        
-#     # init gui object
-#     callback = matplotGui(settings, index_df, power_df)
-#     plt.subplots_adjust(bottom=0.15) # create space for buttons
+    # init gui object
+    callback = matplotGui(settings, index_df, power_df)
+    plt.subplots_adjust(bottom=0.15) # create space for buttons
     
-#     # add title and labels
-#     callback.fig.suptitle('Select PSDs', fontsize=12)        # title
-#     callback.fig.text(0.5, 0.09,'Frequency (Hz)', ha="center")                                          # xlabel
-#     callback.fig.text(.02, .5, 'Power (V^2/Hz)', ha='center', va='center', rotation='vertical')         # ylabel
-#     callback.fig.text(0.9, 0.04,'**** KEY ** Previous : <-, Next: ->, Accept: Y, Reject: N ****' ,      # move/accept labels
-#                       ha="right", bbox=dict(boxstyle="square", ec=(1., 1., 1.), fc=(0.9, 0.9, 0.9),))              
+    # add title and labels
+    callback.fig.suptitle('Select PSDs', fontsize=12)        # title
+    callback.fig.text(0.5, 0.09,'Frequency (Hz)', ha="center")                                          # xlabel
+    callback.fig.text(.02, .5, 'Power (V^2/Hz)', ha='center', va='center', rotation='vertical')         # ylabel
+    callback.fig.text(0.9, 0.04,'**** KEY ** Previous : <-, Next: ->, Accept: Y, Reject: N ****' ,      # move/accept labels
+                      ha="right", bbox=dict(boxstyle="square", ec=(1., 1., 1.), fc=(0.9, 0.9, 0.9),))              
                                                     
-#     # add key press
-#     idx_out = callback.fig.canvas.mpl_connect('key_press_event', callback.keypress)
+    # add key press
+    idx_out = callback.fig.canvas.mpl_connect('key_press_event', callback.keypress)
     
-#     # set useblit True on gtkagg for enhanced performance
-#     # span = SpanSelector(callback.axs, callback.keypress, 'horizontal', useblit=True,
-#     #     rectprops=dict(alpha=0.5, facecolor='red'))
-#     # plt.show()
+    # set useblit True on gtkagg for enhanced performance
+    # span = SpanSelector(callback.axs, callback.keypress, 'horizontal', useblit=True,
+    #     rectprops=dict(alpha=0.5, facecolor='red'))
+    # plt.show()
 
 
 
