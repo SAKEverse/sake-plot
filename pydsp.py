@@ -39,21 +39,19 @@ def main(ctx):
     ctx.obj.update({'index_present': 0})
     ctx.obj.update({'power_present': 0})
     
-    # check if index file is present and get full path
+    # get path to files
     ctx.obj.update({'index_path': os.path.join(ctx.obj['search_path'], ctx.obj['file_index'])})
-    
-    if os.path.isfile(ctx.obj['index_path']):
-        ctx.obj.update({'index_present':1})
-        ctx.obj.update({'index':load_index(ctx.obj['index_path'])})
-        
-    # check if power mat file is present and get full path
     ctx.obj.update({'power_mat_path': os.path.join(ctx.obj['search_path'], ctx.obj['file_power_mat'])})
-    if os.path.isfile(ctx.obj['power_mat_path']):
-        ctx.obj.update({'power_present':1})
-    
-    ############### ADD VERIFICATION #########################
     ctx.obj.update({'index_verified_path': os.path.join(ctx.obj['search_path'], ctx.obj['file_index_verified'])})
     ctx.obj.update({'power_mat_verified_path': os.path.join(ctx.obj['search_path'], ctx.obj['file_power_mat_verified'])})
+    
+    # check if index file is present and get full path
+    if os.path.isfile(ctx.obj['index_path']):
+        ctx.obj.update({'index_present':1})
+        
+    # check if power mat file is present and get full path
+    if os.path.isfile(ctx.obj['power_mat_path']):
+        ctx.obj.update({'power_present':1})
     
             
 ### ------------------------------ SET PATH ------------------------------ ### 
@@ -92,13 +90,16 @@ def stft(ctx, freq):
         if len(freq_range) !=2:
               click.secho(f"\n -> '{freq}' could not be parsed. Please use the following format: 1-30.\n", fg = 'yellow', bold = True)
               return
-        
+    
+    # load index 
+    index_df = load_index(ctx.obj['index_path']
+                          
     # get power 
-    power_df = get_pmat(ctx.obj['index'], fft_duration = ctx.obj['fft_win'],
+    power_df = get_pmat(index_df, fft_duration = ctx.obj['fft_win'],
                 freq_range = ctx.obj['fft_freq_range'], f_noise = ctx.obj['mains_noise'])
     
     # save index and power
-    ctx.obj['index'].to_csv(ctx.obj['index_verified_path'], index = False)
+    index_df.to_csv(ctx.obj['index_verified_path'], index = False)
     power_df.to_pickle(ctx.obj['power_mat_path'])
     power_df.to_pickle(ctx.obj['power_mat_verified_path'])
     
