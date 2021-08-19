@@ -116,11 +116,21 @@ def verify(ctx):
     """
     import matplotlib.pyplot as plt
     from select_psd import matplotGui
+    from pick import pick
     
-    # load index and power mat
-    index_df = pd.read_csv(ctx.obj['index_verified_path'])
-    power_df = pd.read_pickle(ctx.obj['power_mat_path'])
     
+    # select from command list
+    main_dropdown_list = ['Original', 'Verified']
+    title = 'Load File:'
+    option, index = pick(main_dropdown_list, title, indicator = '-> ')
+    
+    if option == 'Original': # load index and power
+        index_df = pd.read_csv(ctx.obj['index_path'])
+        power_df = pd.read_pickle(ctx.obj['power_mat_path'])
+    elif option == 'Verified':
+        index_df = pd.read_csv(ctx.obj['index_verified_path'])
+        power_df = pd.read_pickle(ctx.obj['power_mat_verified_path'])
+
     # init gui object
     callback = matplotGui(ctx.obj, index_df, power_df)
     plt.subplots_adjust(bottom=0.15) # create space for buttons
