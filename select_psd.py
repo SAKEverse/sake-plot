@@ -5,9 +5,7 @@ Created on Tue Apr 14 10:37:05 2020
 """
 
 ### ---------------------- IMPORTS ---------------------- ###
-# import os
 import numpy as np
-# import pandas as pd
 import matplotlib.pyplot as plt
 ### ----------------------------------------------------- ###
 
@@ -55,7 +53,7 @@ class matplotGui(object):
 
         # check if all PSDs were verified
         if np.any(self.index_df['accepted'] == -1) == True:
-            print('Some PSDs were not verified.')
+            print('****** Some PSDs were not verified ******\n')
             
         # get accepted PSDs
         accepted_idx = self.index_df['accepted'] == 1
@@ -64,6 +62,10 @@ class matplotGui(object):
         
         # drop extra columns
         self.index_df = self.index_df.drop(columns = ['accepted','facearray'])
+        
+        # reset index
+        self.index_df.reset_index(drop = True, inplace = True)
+        self.power_df.reset_index(drop = True, inplace = True)
         
         # save verified index and power_df file
         self.index_df.to_csv(self.index_verified_path, index = False)
@@ -97,6 +99,7 @@ class matplotGui(object):
         plot_data(self)
         plot self y and t and mark seizure
         """
+        
         # get index
         self.get_index()
 
@@ -121,19 +124,29 @@ class matplotGui(object):
         if event.key == 'right':
             self.ind += 1 # add one to class index
             self.plot_data() # plot
+            
         if event.key == 'left':
             self.ind -= 1 # subtract one to class index
             self.plot_data() # plot
+            
         if event.key == 'y':
            self.index_df.at[self.i, 'facearray'] = 'palegreen'
-           self.axs.set_facecolor('palegreen')
            self.index_df.at[self.i, 'accepted'] = 1
-           self.fig.canvas.draw()
+           self.axs.set_facecolor('palegreen')
+           plt.draw()
+           plt.pause(0.2)
+           self.ind += 1 # add one to class index
+           self.plot_data() # plot
+          
         if event.key == 'n':
             self.index_df.at[self.i, 'facearray'] = 'salmon'
             self.axs.set_facecolor('salmon')
             self.index_df.at[self.i, 'accepted'] = 0
-            self.fig.canvas.draw()
+            plt.draw()
+            plt.pause(0.2)
+            self.ind += 1 # add one to class index
+            self.plot_data() # plot
+            
         if event.key == 'enter':
             plt.close()
             self.save_idx() # save file to csv
