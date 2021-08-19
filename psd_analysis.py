@@ -243,23 +243,23 @@ def melted_psds(index_df:PandasDf, power_df:PandasDf, freq_range:list, selected_
 
     return df
 
-def plot_mean_psds(df):
-    g = sns.FacetGrid(df.iloc[::5,:], hue='treatment', row='sex', col='brain_region', palette='plasma')
+def plot_mean_psds(df, categories):
+    g = sns.FacetGrid(df, hue=categories[1], row=categories[0], col=categories[2], palette='plasma')
     g.map(sns.lineplot, 'freq', 'power', ci = 'sd')
     plt.legend()
     plt.show()
     
 
 
-# if __name__ == '__main__':
-    
-#     import os, yaml
-#     from load_index import load_index
+if __name__ == '__main__':
+    x = 1
+    # import os, yaml
+    # from load_index import load_index
     # from facet_plot_gui import GridGraph
     
     ### ---------------------- USER INPUT -------------------------------- ###
     
-    # define path and conditions for filtering
+    # # define path and conditions for filtering
     # filename = 'file_index.csv'
     # parent_folder = r'C:\Users\panton01\Desktop\pydsp_analysis'
     # path =  os.path.join(parent_folder, filename)
@@ -295,6 +295,7 @@ def plot_mean_psds(df):
     
     # # get melted psd
     # df = melted_psds(index_df, power_df, [1,30], ['sex', 'treatment', 'brain_region'])
+    # df.to_csv('melted_psd.csv',index=False)
     # # g = sns.FacetGrid(df.iloc[::5,:], hue='treatment', row='sex', col='brain_region', palette='plasma')
     # # g.map(sns.lineplot, 'freq', 'power')
     

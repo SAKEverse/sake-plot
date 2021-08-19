@@ -92,11 +92,11 @@ def stft(ctx, freq):
               return
     
     # load index 
-    index_df = load_index(ctx.obj['index_path']
+    index_df = load_index(ctx.obj['index_path'])
                           
     # get power 
     power_df = get_pmat(index_df, fft_duration = ctx.obj['fft_win'],
-                freq_range = ctx.obj['fft_freq_range'], f_noise = ctx.obj['mains_noise'])
+                        freq_range = ctx.obj['fft_freq_range'], f_noise = ctx.obj['mains_noise'])
     
     # save index and power
     index_df.to_csv(ctx.obj['index_verified_path'], index = False)
@@ -108,7 +108,7 @@ def stft(ctx, freq):
     
     click.secho(f"\n -> Analysis completed: {freq_range} and file saved in:'{ctx.obj['search_path']}'.\n", fg = 'green', bold = True)
 
-### ------------------------------ STFT ---------------------------------- ###      
+### ------------------------------ VERIFY PSDs ---------------------------------- ###      
 @main.command()
 @click.pass_context
 def verify(ctx):
@@ -146,9 +146,8 @@ def verify(ctx):
     # add key press
     callback.fig.canvas.mpl_connect('key_press_event', callback.keypress)
     plt.show()
-
-    
-    
+ 
+### ------------------------------ PLOT ---------------------------------- ###     
 @main.command()
 @click.option('--freq', type = str, help = 'Enter frequency range, e.g. 1-30')
 @click.pass_context
@@ -157,6 +156,7 @@ def plot(ctx, freq):
     
     from psd_analysis import melted_power_area, melted_power_ratio, melted_psds, plot_mean_psds
     from pick import pick
+    from facet_plot_gui import GridGraph
     
     # check if index file exists
     if not ctx.obj['index_present']:
@@ -170,7 +170,7 @@ def plot(ctx, freq):
         return
         
     # select from command list
-    main_dropdown_list = ['mean PSDs', 'individual PSDs', 'summary plot and data export - (power area)',
+    main_dropdown_list = ['mean PSDs','summary plot and data export - (power area)',
                           'summary plot and data export - (power ratio)']
     title = 'Please select file for analysis: '
     option, index = pick(main_dropdown_list, title, indicator = '-> ')
@@ -181,9 +181,8 @@ def plot(ctx, freq):
     
     # get categories
     categories = list(index_df.columns[index_df.columns.get_loc('stop_time')+1:])
-    
+    click.echo(categories)
     if option == 'summary plot and data export - (power area)':
-        from facet_plot_gui import GridGraph
         
         # get power area
         data = melted_power_area(index_df, power_df, ctx.obj['freq_ranges'], categories)
@@ -193,7 +192,6 @@ def plot(ctx, freq):
         return
     
     if option == 'summary plot and data export - (power ratio)':
-        from facet_plot_gui import GridGraph
         
         # get power ratio
         data = melted_power_ratio(index_df, power_df,  ctx.obj['freq_ratios'], categories)
@@ -213,8 +211,8 @@ def plot(ctx, freq):
         return
     
     if option == 'mean PSDs':
-        df = melted_psds(index_df, power_df, freq_range, ['sex', 'treatment', 'brain_region'])
-        plot_mean_psds(df)
+        df = melted_psds(index_df, power_df, freq_range, categories)
+        plot_mean_psds(df, categories)
     
     
 
