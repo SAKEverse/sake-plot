@@ -119,6 +119,10 @@ def verify(ctx):
     from select_psd import matplotGui
     from pick import pick
     
+    # check if index file was not found
+    if not ctx.obj['power_present']:
+        click.secho(f"\n -> File '{ctx.obj['file_power_mat']}' was not found in '{ctx.obj['search_path']}'.\n", fg = 'yellow', bold = True)
+        return
     
     # select from command list
     main_dropdown_list = ['Original', 'Verified']
@@ -158,13 +162,8 @@ def plot(ctx, freq):
     from pick import pick
     from facet_plot_gui import GridGraph
     
-    # check if index file exists
-    if not ctx.obj['index_present']:
-        click.secho(f"\n -> File '{ctx.obj['file_index']}' was not found in '{ctx.obj['search_path']}'.\n", fg = 'yellow', bold = True)
-        return
-    
     # check if power mat exists
-    elif not ctx.obj['power_present']:
+    if not ctx.obj['power_present']:
         click.secho(f"\n -> File '{ctx.obj['file_power_mat']}' was not found in '{ctx.obj['search_path']}'" + 
                     "Need to run 'stft' before plotting.\n", fg = 'yellow', bold = True)
         return
