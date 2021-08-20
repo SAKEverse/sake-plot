@@ -7,15 +7,17 @@ Created on Tue Aug 10 14:53:48 2021
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
-import matplotlib as mpl
 import numpy as np
 import os
-mpl.use('TKAgg')
+# mpl.use('TkAgg')
 
 class GridGraph:
     def __init__(self,path,filename,data):
         """
         Creates an object that stores tidy data from .csv that can create a dynamic facet plot.
+        First column must be individual index.
+        Last comlumn must be the values to graph (y-axis).
+        Middle columns can contain any number of categories.
 
         Parameters
         ----------
@@ -30,7 +32,7 @@ class GridGraph:
         """
         self.kind='box'
         self.first_time=True
-        
+        self.g=None
         #pass inputs to object
         self.path=path
         self.filename=filename
@@ -68,10 +70,11 @@ class GridGraph:
         var2=''
         # if clicked on a graphing parameter
         if ":" in event.artist.get_text():
-            switched=event.artist.get_text().split(":")[1]
+            if 'X:' in event.artist.get_text(): return
+            switched=event.artist.get_text().split(":")[1][1:]
             self.param_list.remove(switched)# put the clicked on at the end
             self.param_list.append(switched)
-            self.draw_graph(self.kind)
+            exec(self.type)
             return
         # if clicked on a graph title
         elif '|' in event.artist.get_text():
@@ -118,8 +121,28 @@ class GridGraph:
         all_data.to_csv(save_path)
         print("-> Exported to:" + str(save_path) + "\n")
 
+    def make_interactive(self):
+        cats=['X: ','Hue: ','Col: ','Row: ']
+        #make each plot title clickable
+        axes=self.g.axes.flat
+        for ax in axes:
+            ax.set_title(ax.get_title(),picker=5,fontsize=10)
+        #add clickable options for x,hue,row,col
+        spacing=np.linspace(.2,.8,4)
+        self.g.tight_layout(pad=2)
+        for i,text in enumerate(self.graph_params):
+            plt.figtext(spacing[i],.01,cats[i]+text,fontsize=10,picker=5,color='blue',fontweight='bold')
+        #add helpful notes to figure
+        plt.figtext(.01,.01,"Click to change:")
+        if len(self.param_list)>2:
+            plt.figtext(.35,.97,"Click a graph title to export",fontsize=12,fontweight='bold')
+        else:
+            plt.figtext(.4,.97,"Click to export",fontsize=12,fontweight='bold',picker=5)
+        #add the click callback to the figure
+        self.g.fig.canvas.callbacks.connect('pick_event', self.on_pick)
+        plt.show()
     
-    def draw_graph(self,kind='box',params=None):
+    def draw_graph(self,kind=False,params=None):
         """
         
 
@@ -135,45 +158,65 @@ class GridGraph:
         None.
 
         """
-        self.kind=kind
-        cats=['X:','Hue:','Col:','Row:']
+        self.type="self.draw_graph()"
+        if kind: self.kind=kind
         # pick the first 4 parameters
         if params != None: self.param_list = params
         if len(self.param_list) > 4:
-            graph_params=self.param_list[:4]
+            self.graph_params=self.param_list[:4]
         else:
-            graph_params=self.param_list
+            self.graph_params=self.param_list
         default=[None]*4
-        for i,param in enumerate(graph_params):
+        for i,param in enumerate(self.graph_params):
             default[i]=param
         #graph the facet plot with the first 4 categories
         x,hue,col,row = default
-        g=sns.catplot(data = self.data, x = x, y = self.graph_value, hue = hue, col = col, row = row, kind = kind,height=3.5,aspect=6/4)
-        #make each plot title clickable
-        axes=g.axes.flat
-        for ax in axes:
-            ax.set_title(ax.get_title(),picker=5)
-        #add clickable options for x,hue,row,col
-        spacing=np.linspace(.2,.9,4)
-        g.tight_layout(pad=2)
-        for i,text in enumerate(graph_params):
-            plt.figtext(spacing[i],.01,cats[i]+text,fontsize=10,picker=5,color='blue',fontweight='bold')
-        #add helpful notes to figure
-        plt.figtext(.01,.01,"Click to change:")
-        if len(self.param_list)>2:
-            plt.figtext(.35,.97,"Click a graph title to export",fontsize=12,fontweight='bold')
-        else:
-            plt.figtext(.4,.97,"Click to export",fontsize=12,fontweight='bold',picker=5)
-        #add the click callback to the figure
-        g.fig.canvas.callbacks.connect('pick_event', self.on_pick)
-        plt.show()
-
-
+        height=2.5
+        self.g=sns.catplot(data = self.data, x = x, y = self.graph_value, hue = hue, col = col, row = row, kind = self.kind,height=height,aspect=6/4)
+        self.make_interactive()
     
+    def draw_psd(self,kind=False,params=None):
+        """
+        
+
+        Parameters
+        ----------
+        kind : str, optional
+            DESCRIPTION. Type of plot, eg. box, bar, violin, strip.
+        params : list, optional
+            DESCRIPTION. A list of 1-4 categories to graph with order:x,hue,col,row.
+
+        Returns
+        -------
+        None.
+
+        """
+        self.type="self.draw_psd()"
+        # first pram stays 'freq', sets up to 3 other params
+        if kind: self.kind=kind
+        if params != None: self.param_list[1:] = params
+        if len(self.param_list) > 4:
+            self.graph_params=self.param_list[:4]
+        else:
+            self.graph_params=self.param_list
+        default=[None]*4
+        for i,param in enumerate(self.graph_params):
+            default[i]=param
+        #graph the facet plot with the first 4 categories
+        x,hue,col,row = default
+        self.g=sns.relplot(data = self.data, x = x, y = self.graph_value, hue = hue, col = col, row = row, height=2.5,aspect=6/4,kind='line',ci='sd')
+        self.make_interactive()
+    
+
 if __name__ == '__main__':
     path= r"C:\Users\gweiss01\Downloads\\"
     filename=r"melt_index.csv"
     data=pd.read_csv(os.path.join(path,filename),index_col=0)
-    graph=GridGraph(path,filename,data)
-    graph.draw_graph('violin')
+    data2=pd.read_csv(r"C:\Users\gweiss01\Downloads\melted_psd1.csv",index_col=0)
+    
+    # graph=GridGraph(path,filename,data)
+    # graph.draw_graph('violin')
+
+    graph=GridGraph(path,filename,data2)
+    graph.draw_psd()
 
