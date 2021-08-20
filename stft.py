@@ -218,7 +218,7 @@ class Stft:
             pmat[:,0] = 0
         
         # fill NaNs
-        # pmat = f_fill(pmat, axis = 1)
+        pmat = f_fill(pmat, axis = 1)
         
         return pmat, outliers
 
@@ -246,7 +246,8 @@ class Stft:
         pmat = self.remove_mains(freq, pmat)
         
         # remove outliers
-        pmat, outliers = self.remove_outliers(pmat)
+        # pmat, outliers = self.remove_outliers(pmat)
+        outliers = np.zeros(pmat.shape[1])
         
         return freq, pmat, outliers
         
