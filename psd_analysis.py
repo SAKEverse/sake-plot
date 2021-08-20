@@ -144,7 +144,10 @@ def melted_power_area(index_df:PandasDf, power_df:PandasDf, freqs:list, selected
         
     # concatenate to array
     index_df = pd.concat([index_df, pd.DataFrame(data = power_array, columns = freq_columns)], axis=1)
-        
+    
+    # set file id as index
+    index_df.set_index('file_id', inplace = True)    
+    
     # melt dataframe for seaborn plotting
     df = pd.melt(index_df, id_vars = selected_categories, value_vars = freq_columns, var_name = 'freq', value_name = 'power_area',
                  ignore_index=False)
@@ -184,6 +187,9 @@ def melted_power_ratio(index_df:PandasDf, power_df:PandasDf, freqs:list, selecte
         
     # concatenate to array
     index_df = pd.concat([index_df, pd.DataFrame(data = power_array, columns = freq_columns)], axis=1)
+    
+    # set file id as index
+    index_df.set_index('file_id', inplace = True)  
         
     # melt dataframe for seaborn plotting
     df = pd.melt(index_df, id_vars = selected_categories, value_vars = freq_columns, var_name = 'freq', value_name = 'power_ratio',
@@ -215,7 +221,8 @@ def melted_psds(index_df:PandasDf, power_df:PandasDf, freq_range:list, selected_
     repeat_array = np.zeros(len(index_df))
     
     # get selected columns
-    df = index_df[selected_categories]
+    df = index_df[['file_id'] + selected_categories]
+    
     for i in range(len(index_df)): # iterate over dataframe
         
         # unpack frequency and power
@@ -237,6 +244,9 @@ def melted_psds(index_df:PandasDf, power_df:PandasDf, freq_range:list, selected_
     # repeat array
     df = df.reindex(df.index.repeat(repeat_array))
     
+    # set file id as index
+    df.set_index('file_id', inplace = True) 
+    
     # append to dataframe
     df['freq'] = freq_array
     df['power'] = power_array
@@ -251,32 +261,32 @@ def plot_mean_psds(df, categories):
     
 
 
-if __name__ == '__main__':
-    x = 1
-    # import os, yaml
-    # from load_index import load_index
-    # from facet_plot_gui import GridGraph
+# if __name__ == '__main__':
+#     x = 1
+#     import os, yaml
+#     from load_index import load_index
+#     # from facet_plot_gui import GridGraph
     
-    ### ---------------------- USER INPUT -------------------------------- ###
+#     ### ---------------------- USER INPUT -------------------------------- ###
     
-    # # define path and conditions for filtering
-    # filename = 'file_index.csv'
-    # parent_folder = r'C:\Users\panton01\Desktop\pydsp_analysis'
-    # path =  os.path.join(parent_folder, filename)
+#     # define path and conditions for filtering
+#     filename = 'file_index.csv'
+#     parent_folder = r'C:\Users\panton01\Desktop\pydsp_analysis'
+#     path =  os.path.join(parent_folder, filename)
     
-    # # enter filter conditions
-    # filter_conditions = {'brain_region':['bla', 'pfc'], 'treatment':['baseline','vehicle']} #
+#     # enter filter conditions
+#     filter_conditions = {'brain_region':['bla', 'pfc'], 'treatment':['baseline','vehicle']} #
     
-    # # define frequencies of interest
-    # with open('settings.yaml', 'r') as file:
-    #     settings = yaml.load(file, Loader=yaml.FullLoader)
+#     # define frequencies of interest
+#     with open('settings.yaml', 'r') as file:
+#         settings = yaml.load(file, Loader=yaml.FullLoader)
     
-    #### ---------------------------------------------------------------- ####
+#     ### ---------------------------------------------------------------- ####
     
-    # filter index based on conditions
+    # load data frame
     # index_df = load_index(path)
     
-    # # save dataframe
+    # save dataframe
     # index_df.to_pickle(os.path.join(parent_folder, filename.replace('csv','pickle')))
     
     # get pmat
@@ -294,12 +304,12 @@ if __name__ == '__main__':
     # # sns.catplot(data = df, x = 'freq', y = 'power_area', hue = 'treatment', col = 'sex', row = 'brain_region', kind = 'box')
     
     # # get melted psd
-    # df = melted_psds(index_df, power_df, [1,30], ['sex', 'treatment', 'brain_region'])
+    df = melted_psds(index_df, power_df, [1,30], ['sex', 'treatment', 'brain_region'])
     # df.to_csv('melted_psd.csv',index=False)
     # # g = sns.FacetGrid(df.iloc[::5,:], hue='treatment', row='sex', col='brain_region', palette='plasma')
     # # g.map(sns.lineplot, 'freq', 'power')
     
-  
+    df.to_csv('melted_psd.csv',index=True)
     # path = r'C:\Users\panton01\Desktop\pydsp_analysis'
     # filename = 'power_area_df.csv'
     # df.to_csv(os.path.join(path, filename), index = False)
