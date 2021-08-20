@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from beartype import beartype
 from scipy.signal import stft
+from scipy.stats import zscore, median_abs_deviation
 ########## ---------------------------------------------------------------- ##########
 
 class GetIndex():
@@ -58,13 +59,14 @@ def get_freq_index(freq_vector:np.ndarray, freqs) -> np.ndarray:
     # get index 
     return vfunc(freqs)
 
-def f_fill(arr:np.ndarray) -> np.ndarray:
+def f_fill(arr:np.ndarray, axis:int = 0) -> np.ndarray:
     """
     Replace nans using pandas ffil method.
 
     Parameters
     ----------
     arr : np.ndarray
+    axis : int, axis for filling operation
 
     Returns
     -------
@@ -72,7 +74,7 @@ def f_fill(arr:np.ndarray) -> np.ndarray:
 
     """
     df = pd.DataFrame(arr)
-    df = df.fillna(method='ffill', axis=0)
+    df = df.fillna(method='ffill', axis = axis)
     return  df.values
 
 # Single PSD class
@@ -83,7 +85,8 @@ class Stft:
     """
     
     @beartype
-    def __init__(self, fs:int, win_dur:int, freq_range:list, overlap:float = 0.5):
+    def __init__(self, fs:int, win_dur:int, freq_range:list, overlap:float = 0.5, 
+                 outlier_threshold = 8, mains_noise = [59, 61]):
         """
 
         Parameters
@@ -106,6 +109,9 @@ class Stft:
         self.overlap = overlap                                  # overlap (ratio)
         self.overlap_size = int(self.winsize * self.overlap)    # overlap size (samples)
         self.freq_range = freq_range                            # frequency range (Hz)
+        
+        self.outlier_threshold = outlier_threshold
+        self.f_noise = mains_noise
         
         # get frequency index
         self.f_idx = self.get_freq_idx(self.freq_range)
@@ -151,8 +157,8 @@ class Stft:
         
         return f[self.f_idx[0] : self.f_idx[1]+1], pmat
 
-    @staticmethod
-    def remove_mains(freq:np.ndarray, pmat:np.ndarray, f_noise:list) -> np.ndarray:
+    @beartype
+    def remove_mains(self, freq:np.ndarray, pmat:np.ndarray) -> np.ndarray:
         """
         Remove mains noise, using nans replacement and
 
@@ -169,21 +175,55 @@ class Stft:
         """
 
         # find frequency index
-        f_idx = get_freq_index(freq, f_noise)
+        f_idx = get_freq_index(freq, self.f_noise)
 
         # set noise index to NaNs
         pmat[f_idx[0]:f_idx[1]+1,:] = np.nan
 
         # fill NaNs
-        pmat = f_fill(pmat)
+        pmat = f_fill(pmat, axis = 0)
 
         return pmat
     
-    
-    ### ADD OUTLIER REMOVAL ###
+    @beartype
+    def remove_outliers(self, pmat:np.ndarray):
+        """
+        Remove outliers based on MAD
+
+        Parameters
+        ----------
+        pmat : np.ndarray
+
+        Returns
+        -------
+        pmat : np.ndarray
+        outliers : np.ndarray
+
+        """
+        
+        # get normalized mean power
+        z = zscore(np.mean(pmat, axis = 0))
+        
+        # get mad
+        mad = median_abs_deviation(z)
+        
+        # find outliers
+        outliers = (z>(mad*self.outlier_threshold)) | (z<(-mad*self.outlier_threshold))
+        
+        # replace outliers with nans
+        pmat[:, outliers] = np.nan
+        
+        # replace first nan with zero
+        if outliers[0] == False:
+            pmat[:,0] = 0
+        
+        # fill NaNs
+        pmat = f_fill(pmat, axis = 1)
+        
+        return pmat, outliers
 
 
-    def run_stft(self, input_wave:np.ndarray, f_noise:list):
+    def run_stft(self, input_wave:np.ndarray):
         """
         Get stft and remove mains noise.
 
@@ -203,9 +243,13 @@ class Stft:
         freq, pmat = self.get_stft(input_wave)
 
         # remove mains nose
-        pmat = Stft.remove_mains(freq, pmat, f_noise)
-
-        return freq, pmat
+        pmat = self.remove_mains(freq, pmat)
+        
+        # remove outliers
+        # pmat, outliers = self.remove_outliers(pmat)
+        outliers = np.zeros(pmat.shape[1])
+        
+        return freq, pmat, outliers
         
         
         
