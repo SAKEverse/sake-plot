@@ -9,6 +9,7 @@ import seaborn as sns
 from matplotlib import pyplot as plt
 import numpy as np
 import os
+import PyQt5
 # mpl.use('TkAgg')
 
 class GridGraph:
@@ -48,6 +49,7 @@ class GridGraph:
         ind=self.param_list.index('freq')
         self.param_list[ind],self.param_list[0] = self.param_list[0],self.param_list[ind]
         self.pivot_params=self.param_list
+        PyQt5.QtCore.qInstallMessageHandler(self.handler)#supress the error message
 
         
 
@@ -142,7 +144,7 @@ class GridGraph:
         self.g.fig.canvas.callbacks.connect('pick_event', self.on_pick)
         plt.show()
     
-    def draw_graph(self,kind=False,params=None):
+    def draw_graph(self,params=None):
         """
         
 
@@ -182,7 +184,7 @@ class GridGraph:
         Parameters
         ----------
         kind : str, optional
-            DESCRIPTION. Type of plot, eg. box, bar, violin, strip.
+            DESCRIPTION. Type of plot, eg. line.
         params : list, optional
             DESCRIPTION. A list of 1-4 categories to graph with order:x,hue,col,row.
 
@@ -207,6 +209,24 @@ class GridGraph:
         self.g=sns.relplot(data = self.data, x = x, y = self.graph_value, hue = hue, col = col, row = row, height=2.5,aspect=6/4,kind='line',ci='sd')
         self.make_interactive()
     
+
+    def handler(msg_type, msg_log_context, msg_string, fourth_one):
+        '''
+        Supresses the error message with pass 
+
+        Parameters
+        ----------
+        msg_type : 
+        msg_log_context : 
+        msg_string : 
+
+        Returns
+        -------
+        None.
+
+        '''
+        pass
+
 
 if __name__ == '__main__':
     path= r"C:\Users\gweiss01\Downloads\\"
