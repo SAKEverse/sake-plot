@@ -9,8 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 ### ----------------------------------------------------- ###
 
-
-class matplotGui(object):
+class matplotGui:
     """
         Matplotlib GUI for user seizure verification.
     """
@@ -22,6 +21,9 @@ class matplotGui(object):
         # get values from dictionary
         for key, value in settings.items():
                setattr(self, key, value)
+               
+        # wait time after plot
+        self.wait_time = 0.2 # in seconds
 
         # pass object attributes to class
         self.power_df = power_df                      
@@ -116,18 +118,26 @@ class matplotGui(object):
         sem_time = np.std(self.power_df['pmat'][self.i], axis = 0) / np.sqrt(self.power_df['pmat'][self.i].shape[0])
         
         # plot time
-        self.axs[0].plot(time_plot, color='black', linewidth=1.5, alpha=0.9, label = self.index_df.index[self.i])
-        self.axs[0].fill_between(time_plot+sem_time, time_plot-sem_time, color = 'gray')
+        t = np.arange(0,time_plot.shape[0],1)
+        self.axs[0].plot(t,time_plot, color='black', linewidth=1.5, alpha=0.9, label = self.index_df.index[self.i])
+        self.axs[0].fill_between(t, time_plot+sem_time, time_plot-sem_time, color = 'gray')
+        
+        # add outliers
+        outliers = self.power_df['outliers'][self.i]
+        self.axs[0].plot(t[outliers], time_plot[outliers], color='orange', linestyle='', marker='x')
+        
         self.axs[0].set_facecolor(self.index_df['facearray'][self.i]);
         self.axs[0].legend(loc = 'upper right')
         self.axs[0].set_xlabel('Time Bin')
+        self.axs[0].set_ylabel('Mean Power')
         
         # plot new graph
         self.axs[1].plot(self.power_df['freq'][self.i], psd, color='black', linewidth=1.5, alpha=0.9, label = self.index_df.index[self.i])
         self.axs[1].fill_between(self.power_df['freq'][self.i], psd+sem, psd-sem, color = 'gray')
         self.axs[1].set_facecolor(self.index_df['facearray'][self.i]);
-        
-        
+        self.axs[1].set_xlabel('Frequency (Hz)')
+        self.axs[1].set_ylabel('Power (V^2/Hz)')
+
         self.fig.canvas.draw() # draw
 
          
@@ -142,20 +152,36 @@ class matplotGui(object):
             self.plot_data() # plot
             
         if event.key == 'y':
+           # set values to arrays
            self.index_df.at[self.i, 'facearray'] = 'palegreen'
            self.index_df.at[self.i, 'accepted'] = 1
+           
+           # change background color  
            self.axs[0].set_facecolor('palegreen')
+           self.axs[1].set_facecolor('palegreen')
+           
+           # draw and pause for user visualization
            plt.draw()
-           plt.pause(0.2)
+           plt.pause(self.wait_time)
+           
+           # plot next event
            self.ind += 1 # add one to class index
            self.plot_data() # plot
           
         if event.key == 'n':
+            # set values to arrays
             self.index_df.at[self.i, 'facearray'] = 'salmon'
-            self.axs[0].set_facecolor('salmon')
             self.index_df.at[self.i, 'accepted'] = 0
+            
+            # change background color
+            self.axs[0].set_facecolor('salmon')
+            self.axs[1].set_facecolor('salmon')
+            
+            # draw and pause for user visualization
             plt.draw()
-            plt.pause(0.2)
+            plt.pause(self.wait_time)
+            
+            # plot next event
             self.ind += 1 # add one to class index
             self.plot_data() # plot
             
@@ -215,8 +241,8 @@ if __name__ == '__main__':
     
     # add title and labels
     callback.fig.suptitle('Select PSDs', fontsize=12)        # title
-    callback.fig.text(0.5, 0.09,'Frequency (Hz)', ha="center")                                          # xlabel
-    callback.fig.text(.02, .5, 'Power (V^2/Hz)', ha='center', va='center', rotation='vertical')         # ylabel
+    # callback.fig.text(0.5, 0.09,'Frequency (Hz)', ha="center")                                          # xlabel
+    # callback.fig.text(.02, .5, 'Power (V^2/Hz)', ha='center', va='center', rotation='vertical')         # ylabel
     callback.fig.text(0.9, 0.04,'**** KEY ** Previous : <-, Next: ->, Accept: Y, Reject: N ****' ,      # move/accept labels
                       ha="right", bbox=dict(boxstyle="square", ec=(1., 1., 1.), fc=(0.9, 0.9, 0.9),))              
                                                     
