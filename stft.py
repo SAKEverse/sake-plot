@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from beartype import beartype
 from scipy.signal import stft
-from scipy.stats import zscore, median_abs_deviation
+# from scipy.stats import zscore, median_abs_deviation
 ########## ---------------------------------------------------------------- ##########
 
 class GetIndex():
@@ -76,6 +76,82 @@ def f_fill(arr:np.ndarray, axis:int = 0) -> np.ndarray:
     df = pd.DataFrame(arr)
     df = df.fillna(method='ffill', axis = axis)
     return  df.values
+
+def get_threshold(vector:np.ndarray, threshold:float) -> dict:
+    """
+    Find threshold
+
+    Parameters
+    ----------
+    vector : np.ndarray
+    threshold : float
+
+    Returns
+    -------
+    dict, positive and negative outlier threshold
+
+    """
+    
+    # find positive and outlier threshold
+    outlier_threshold_pos = (np.median(vector) + (np.std(vector)*threshold))
+    
+    # find negative and outlier threshold
+    outlier_threshold_neg = (np.median(vector) - (np.std(vector)*threshold))
+    
+    return {'pos' : outlier_threshold_pos, 'neg': outlier_threshold_neg}
+
+def get_outliers(time_vector:np.ndarray, window:int, threshold:float) -> np.ndarray:
+    """
+    Find outliers from vector
+
+    Parameters
+    ----------
+    time_vector : np.ndarray
+    window : int
+    threshold : float
+
+    Returns
+    -------
+    outliers : np.ndarray
+
+    """
+    
+    # create vector
+    outliers = np.zeros(time_vector.shape, dtype = bool)
+    
+    # half window
+    half_win = int(np.ceil(window/2))
+    
+    ## start
+    # get baseline and threshold
+    baseline = time_vector[:half_win]
+    outlier_threshold = get_threshold(baseline, threshold)
+
+    for base_cnt,i in enumerate(range(half_win)):
+        # find outliers
+        outliers[i] = (baseline[base_cnt] < outlier_threshold['neg']) | (baseline[base_cnt] > outlier_threshold['pos'])
+    
+    ## middle  
+    # get baseline and threshold
+    for i in range(i+1, time_vector.shape[0] - half_win):
+        
+        # get baseline and threshold
+        baseline = time_vector[i - half_win : i + half_win]  
+        outlier_threshold = get_threshold(baseline, threshold)
+        
+        # find outliers
+        outliers[i] = (baseline[half_win] < outlier_threshold['neg']) | (baseline[half_win] > outlier_threshold['pos'])
+    
+    ## end
+    # get baseline and threshold
+    baseline = time_vector[i+1:]
+    outlier_threshold = get_threshold(baseline, threshold)
+    
+    for base_cnt,i in enumerate(range(i+1, time_vector.shape[0])):
+        # find outliers
+        outliers[i] = (baseline[base_cnt] < outlier_threshold['neg']) | (baseline[base_cnt] > outlier_threshold['pos'])
+
+    return outliers
 
 # Single PSD class
 class Stft:
@@ -200,25 +276,20 @@ class Stft:
         outliers : np.ndarray
 
         """
-        
-        # get normalized mean power
-        z = zscore(np.mean(pmat, axis = 0))
-        
-        # get mad
-        mad = median_abs_deviation(z)
-        
-        # find outliers
-        outliers = (z>(mad*self.outlier_threshold)) | (z<(-mad*self.outlier_threshold))
-        
+        # get outliers
+        outliers = get_outliers(np.mean(pmat,axis=0), 31, self.outlier_threshold)
+
         # replace outliers with nans
         pmat[:, outliers] = np.nan
         
-        # replace first nan with zero
-        if outliers[0] == False:
-            pmat[:,0] = 0
+        # find row (freq) median value
+        row_med = np.nanmedian(pmat, axis=1)
+
+        # find indices that you need to replace
+        inds = np.where(np.isnan(pmat))
         
-        # fill NaNs
-        pmat = f_fill(pmat, axis = 1)
+        # place row medians in the indices.
+        pmat[inds] = np.take(row_med, inds[0])
         
         return pmat, outliers
 
@@ -246,8 +317,7 @@ class Stft:
         pmat = self.remove_mains(freq, pmat)
         
         # remove outliers
-        # pmat, outliers = self.remove_outliers(pmat)
-        outliers = np.zeros(pmat.shape[1])
+        pmat, outliers = self.remove_outliers(pmat)
         
         return freq, pmat, outliers
         

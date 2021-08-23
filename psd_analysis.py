@@ -268,7 +268,7 @@ if __name__ == '__main__':
     x = 1
     import os, yaml
     from load_index import load_index
-    from facet_plot_gui import GridGraph
+    # from facet_plot_gui import GridGraph
     
     ### ---------------------- USER INPUT -------------------------------- ###
     

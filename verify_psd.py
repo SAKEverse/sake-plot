@@ -8,8 +8,6 @@ Created on Tue Apr 14 10:37:05 2020
 import numpy as np
 import matplotlib.pyplot as plt
 ### ----------------------------------------------------- ###
-from scipy.stats import zscore, median_abs_deviation
-from stft import f_fill
 
 class matplotGui:
     """
@@ -59,7 +57,7 @@ class matplotGui:
 
         # check if all PSDs were verified
         if np.any(self.index_df['accepted'] == -1) == True:
-            print('****** Some PSDs were not verified ******\n')
+            print('\n****** Some PSDs were not verified ******\n')
             
         # get accepted PSDs
         accepted_idx = self.index_df['accepted'] == 1
@@ -125,26 +123,14 @@ class matplotGui:
         self.axs[0].fill_between(t, time_plot+sem_time, time_plot-sem_time, color = 'gray')
         
         # add outliers
-        z = zscore(time_plot)
+        outliers = self.power_df['outliers'][self.i]
         
-        # get mad
-        mad = median_abs_deviation(z)
+        # # get pmat
+        # pmat = self.power_df['pmat'][self.i]
         
-        # find outliers
-        outliers = (z>(mad*self.outlier_threshold)) | (z<(-mad*self.outlier_threshold))
-        
-                # replace outliers with nans
-        pmat = self.power_df['pmat'][self.i]
-        pmat[:, outliers] = np.nan
-        
-        # replace first nan with zero
-        if outliers[0] == False:
-            pmat[:,0] = 0
-        
-        # fill NaNs
-        pmat = f_fill(pmat, axis = 1)
-        
-        # outliers = self.power_df['outliers'][self.i]
+        # outliers = get_outliers(time_plot, 51, self.outlier_threshold)
+    
+    
         self.axs[0].plot(t[outliers], time_plot[outliers], color='orange', linestyle='', marker='x')
         
         self.axs[0].set_facecolor(self.index_df['facearray'][self.i]);
