@@ -144,7 +144,7 @@ class GridGraph:
         self.g.fig.canvas.callbacks.connect('pick_event', self.on_pick)
         plt.show()
     
-    def draw_graph(self,params=None):
+    def draw_graph(self,kind=None,params=None):
         """
         
 
@@ -206,7 +206,7 @@ class GridGraph:
             default[i]=param
         #graph the facet plot with the first 4 categories
         x,hue,col,row = default
-        self.g=sns.relplot(data = self.data, x = x, y = self.graph_value, hue = hue, col = col, row = row, height=2.5,aspect=6/4,kind='line',ci='sd')
+        self.g=sns.relplot(data = self.data, x = x, y = self.graph_value, hue = hue, col = col, row = row, height=2.5,aspect=6/4,kind='line',ci='se')
         self.make_interactive()
     
 
