@@ -74,30 +74,6 @@ def mad(arr):
     return np.median(np.abs(arr-np.median(arr)))
 
 @njit
-def get_threshold(vector:np.ndarray, threshold:float) -> dict:
-    """
-    Find positive and negative thresholds
-
-    Parameters
-    ----------
-    vector : np.ndarray
-    threshold : float, multiplier for threshold
-
-    Returns
-    -------
-    nnp.ndarray: [negative,positive] outlier threshold
-
-    """
-    
-    # find positive and outlier threshold
-    outlier_threshold_pos = (np.median(vector) + (np.std(vector)*threshold))
-    
-    # find negative and outlier threshold
-    outlier_threshold_neg = (np.median(vector) - (np.std(vector)*threshold))
-    
-    return np.array( [outlier_threshold_neg, outlier_threshold_pos] )
-
-@njit
 def rolling_outliers(arr:np.ndarray, window:int, threshold:float) -> np.ndarray:
     """
     Find outliers from vector
@@ -117,18 +93,17 @@ def rolling_outliers(arr:np.ndarray, window:int, threshold:float) -> np.ndarray:
     # create vector and convert to bool
     median_value = np.zeros(arr.shape)
     mad_value = np.zeros(arr.shape)
-    # outliers = outliers == 1
     
     # half window
     half_win = int(np.ceil(window/2))
-    
+
     ## start
     # get baseline and threshold
     baseline = arr[:half_win]
-    for base_cnt,i in enumerate(range(half_win)):
-        # find outliers
-        median_value[i] = np.median(baseline)
-        mad_value[i] = mad(baseline)
+    median_value[:half_win] = np.median(baseline)
+    mad_value[:half_win] = mad(baseline)
+    
+    i = half_win # init counter
     
     ## middle  
     # get baseline and threshold
@@ -141,11 +116,13 @@ def rolling_outliers(arr:np.ndarray, window:int, threshold:float) -> np.ndarray:
     ## end
     # get baseline and threshold
     baseline = arr[i+1:]
-    for base_cnt,i in enumerate(range(i+1, arr.shape[0])):
-        median_value[i] = np.median(baseline)
-        mad_value[i] = mad(baseline)
+    median_value[i+1:] = np.median(baseline)
+    mad_value[i+1:] = mad(baseline)
+        
+    # compare the original array to the threshold index to find the outliers
+    outliers = ((arr>(median_value + mad_value*threshold)) |  (arr<(median_value - mad_value*threshold)))
 
-    return median_value, mad_value
+    return outliers
 
 
 def fast_outliers(arr:np.ndarray, window:int, threshold:float) -> np.ndarray:
@@ -168,11 +145,11 @@ def fast_outliers(arr:np.ndarray, window:int, threshold:float) -> np.ndarray:
         
     # divide the array into windows by reshaping, then find the median of each window, this makes an array of size: original_len/window
     reshaped = pd.DataFrame(arr[:(arr.shape[0]//window)*window].reshape(-1,window))
-    medians = reshaped.median(axis=1)
     
+    # get median and mad
+    medians = reshaped.median(axis=1)
     mads = reshaped.mad(axis=1)
 
-    
     # expand the array back to full size by interpolaing the in between values
     smoothed_medians = np.interp(np.linspace(0, medians.shape[0], medians.shape[0]*window), np.arange(medians.shape[0]), medians)
     smoothed_mads = np.interp(np.linspace(0, mads.shape[0], mads.shape[0]*window), np.arange(mads.shape[0]), mads)
@@ -186,13 +163,9 @@ def fast_outliers(arr:np.ndarray, window:int, threshold:float) -> np.ndarray:
     medians = np.append(smoothed_medians,[smoothed_medians[-1]]*(arr.shape[0]-smoothed_medians.shape[0]))
 
     # compare the original array to the threshold index to find the outliers
-    outliers = ((arr>(medians+smoothed_mads*threshold)) |  (arr<(medians-smoothed_mads*threshold)))
+    outliers = ((arr>(medians + smoothed_mads*threshold)) |  (arr<(medians - smoothed_mads*threshold)))
     
     return outliers
-
-
-
-
 
 # define function that will be executed
 get_outliers = rolling_outliers

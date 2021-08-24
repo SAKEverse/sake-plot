@@ -119,20 +119,12 @@ class matplotGui:
         
         # plot time
         t = np.arange(0,time_plot.shape[0],1)
-        self.axs[0].plot(t,time_plot, color='black', linewidth=1.5, alpha=0.9, label = self.index_df.index[self.i])
+        self.axs[0].plot(t ,time_plot, color='black', linewidth=1.5, alpha=0.9, label = self.index_df.index[self.i])
         self.axs[0].fill_between(t, time_plot+sem_time, time_plot-sem_time, color = 'gray')
         
-        # add outliers
+        # show outliers
         outliers = self.power_df['outliers'][self.i]
-        
-        # # get pmat
-        # pmat = self.power_df['pmat'][self.i]
-        
-        # outliers = get_outliers(time_plot, 51, self.outlier_threshold)
-    
-    
         self.axs[0].plot(t[outliers], time_plot[outliers], color='orange', linestyle='', marker='x')
-        
         self.axs[0].set_facecolor(self.index_df['facearray'][self.i]);
         self.axs[0].legend(loc = 'upper right')
         self.axs[0].set_xlabel('Time Bin')
@@ -197,69 +189,47 @@ class matplotGui:
             self.save_idx() # save file to csv
             
             
-    #         ## ------ Mouse Button Press ------ ##   
-    # def forward(self, event):
-    #     self.ind += 1 # add one to class index
-    #     self.plot_data() # plot
-        
-    # def previous(self, event):
-    #     self.ind -= 1 # subtract one to class index
-    #     self.plot_data() # plot
-        
-    # def accept(self, event):
-    #     self.facearray[self.i] = 'palegreen'
-    #     self.axs.set_facecolor('palegreen')
-    #     self.index_df['accepted'][self.i] = 1
-    #     self.fig.canvas.draw()
-        
-    # def reject(self, event):
-    #     self.facearray[self.i] = 'salmon'
-    #     self.axs.set_facecolor('salmon')
-    #     self.index_df['accepted'][self.i] = 1
-    #     self.fig.canvas.draw()
-
-
-if __name__ == '__main__':
-    import yaml,os
-    import pandas as pd
-    from load_index import load_index
-    from matplotlib.widgets import Button, SpanSelector, TextBox
-        # define path and conditions for filtering
-    filename = 'file_index.csv'
-    parent_folder = r'C:\Users\panton01\Desktop\pydsp_analysis'
-    path =  os.path.join(parent_folder, filename)
+# if __name__ == '__main__':
+#     import yaml,os
+#     import pandas as pd
+#     from load_index import load_index
+#     from matplotlib.widgets import Button, SpanSelector, TextBox
+#         # define path and conditions for filtering
+#     filename = 'file_index.csv'
+#     parent_folder = r'C:\Users\panton01\Desktop\pydsp_analysis'
+#     path =  os.path.join(parent_folder, filename)
     
-    # enter filter conditions
-    filter_conditions = {'brain_region':['bla', 'pfc'], 'treatment':['baseline','vehicle']} #
+#     # enter filter conditions
+#     filter_conditions = {'brain_region':['bla', 'pfc'], 'treatment':['baseline','vehicle']} #
     
-    # define frequencies of interest
-    with open('settings.yaml', 'r') as file:
-        settings = yaml.load(file, Loader=yaml.FullLoader)
+#     # define frequencies of interest
+#     with open('settings.yaml', 'r') as file:
+#         settings = yaml.load(file, Loader=yaml.FullLoader)
     
-    #### ---------------------------------------------------------------- ####
+#     #### ---------------------------------------------------------------- ####
     
-    # load index and power dataframe
-    index_df = load_index(path)
-    power_df = pd.read_pickle(r'C:\Users\panton01\Desktop\pydsp_analysis\power_mat.pickle')
+#     # load index and power dataframe
+#     index_df = load_index(path)
+#     power_df = pd.read_pickle(r'C:\Users\panton01\Desktop\pydsp_analysis\power_mat.pickle')
        
-    # init gui object
-    callback = matplotGui(settings, index_df, power_df)
-    plt.subplots_adjust(bottom=0.15) # create space for buttons
+#     # init gui object
+#     callback = matplotGui(settings, index_df, power_df)
+#     plt.subplots_adjust(bottom=0.15) # create space for buttons
     
-    # add title and labels
-    callback.fig.suptitle('Select PSDs', fontsize=12)        # title
-    # callback.fig.text(0.5, 0.09,'Frequency (Hz)', ha="center")                                          # xlabel
-    # callback.fig.text(.02, .5, 'Power (V^2/Hz)', ha='center', va='center', rotation='vertical')         # ylabel
-    callback.fig.text(0.9, 0.04,'**** KEY ** Previous : <-, Next: ->, Accept: Y, Reject: N ****' ,      # move/accept labels
-                      ha="right", bbox=dict(boxstyle="square", ec=(1., 1., 1.), fc=(0.9, 0.9, 0.9),))              
+#     # add title and labels
+#     callback.fig.suptitle('Select PSDs', fontsize=12)        # title
+#     # callback.fig.text(0.5, 0.09,'Frequency (Hz)', ha="center")                                          # xlabel
+#     # callback.fig.text(.02, .5, 'Power (V^2/Hz)', ha='center', va='center', rotation='vertical')         # ylabel
+#     callback.fig.text(0.9, 0.04,'**** KEY ** Previous : <-, Next: ->, Accept: Y, Reject: N ****' ,      # move/accept labels
+#                       ha="right", bbox=dict(boxstyle="square", ec=(1., 1., 1.), fc=(0.9, 0.9, 0.9),))              
                                                     
-    # add key press
-    idx_out = callback.fig.canvas.mpl_connect('key_press_event', callback.keypress)
+#     # add key press
+#     idx_out = callback.fig.canvas.mpl_connect('key_press_event', callback.keypress)
     
-    # set useblit True on gtkagg for enhanced performance
-    # span = SpanSelector(callback.axs, callback.keypress, 'horizontal', useblit=True,
-    #     rectprops=dict(alpha=0.5, facecolor='red'))
-    # plt.show()
+#     # set useblit True on gtkagg for enhanced performance
+#     # span = SpanSelector(callback.axs, callback.keypress, 'horizontal', useblit=True,
+#     #     rectprops=dict(alpha=0.5, facecolor='red'))
+#     # plt.show()
 
 
 
