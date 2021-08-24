@@ -55,8 +55,9 @@ def rolling_outliers(arr:np.ndarray, window:int, threshold:float) -> np.ndarray:
     """
     
     # create vector and convert to bool
-    outliers = np.zeros(arr.shape)
-    outliers = outliers == 1
+    median_value = np.zeros(arr.shape)
+    mad_value = np.zeros(arr.shape)
+    # outliers = outliers == 1
     
     # half window
     half_win = int(np.ceil(window/2))
@@ -64,33 +65,27 @@ def rolling_outliers(arr:np.ndarray, window:int, threshold:float) -> np.ndarray:
     ## start
     # get baseline and threshold
     baseline = arr[:half_win]
-    outlier_threshold = get_threshold(baseline, threshold)
-
     for base_cnt,i in enumerate(range(half_win)):
         # find outliers
-        outliers[i] = (baseline[base_cnt] < outlier_threshold[0]) | (baseline[base_cnt] > outlier_threshold[1])
+        median_value[i] = np.median(baseline)
+        mad_value[i] = mad(baseline)
     
     ## middle  
     # get baseline and threshold
     for i in range(i+1, arr.shape[0] - half_win):
-        
         # get baseline and threshold
         baseline = arr[i - half_win : i + half_win]  
-        outlier_threshold = get_threshold(baseline, threshold)
-        
-        # find outliers
-        outliers[i] = (baseline[half_win] < outlier_threshold[0]) | (baseline[half_win] > outlier_threshold[1])
-    
+        median_value[i] = np.median(baseline)
+        mad_value[i] = mad(baseline)
+
     ## end
     # get baseline and threshold
     baseline = arr[i+1:]
-    outlier_threshold = get_threshold(baseline, threshold)
-    
     for base_cnt,i in enumerate(range(i+1, arr.shape[0])):
-        # find outliers
-        outliers[i] = (baseline[base_cnt] < outlier_threshold[0]) | (baseline[base_cnt] > outlier_threshold[1])
+        median_value[i] = np.median(baseline)
+        mad_value[i] = mad(baseline)
 
-    return outliers
+    return median_value, mad_value
 
 
 def median_outliers(arr:np.ndarray, window:int, threshold:float) -> np.ndarray:
