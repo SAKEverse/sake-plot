@@ -8,6 +8,9 @@ Created on Tue Aug 24 10:09:35 2021
 import numpy as np
 from numba import njit
 
+@njit
+def mad(arr):
+    return np.median(np.abs(arr-np.median(arr)))
 
 @njit
 def get_threshold(vector:np.ndarray, threshold:float) -> dict:
@@ -31,7 +34,7 @@ def get_threshold(vector:np.ndarray, threshold:float) -> dict:
     # find negative and outlier threshold
     outlier_threshold_neg = (np.median(vector) - (np.std(vector)*threshold))
     
-    return np.array( [outlier_threshold_neg, outlier_threshold_pos] ) #{'pos' : outlier_threshold_pos, 'neg': outlier_threshold_neg}
+    return np.array( [outlier_threshold_neg, outlier_threshold_pos] )
 
 @njit
 def rolling_outliers(arr:np.ndarray, window:int, threshold:float) -> np.ndarray:
