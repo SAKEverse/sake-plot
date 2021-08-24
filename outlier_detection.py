@@ -89,8 +89,21 @@ def rolling_outliers(arr:np.ndarray, window:int, threshold:float) -> np.ndarray:
     return outliers
 
 
-def fast_outliers(arr:np.ndarray, window:int, threshold:float) -> np.ndarray:
-    
+def median_outliers(arr:np.ndarray, window:int, threshold:float) -> np.ndarray:
+    '''
+    finds the outliers based on median by reshaping
+
+    Parameters
+    ----------
+    arr : np.ndarray
+    window : int
+    threshold : float
+
+    Returns
+    -------
+    outliers : np.ndarray
+
+    '''
 
     # first make a threshold index:
         
@@ -104,6 +117,64 @@ def fast_outliers(arr:np.ndarray, window:int, threshold:float) -> np.ndarray:
     time_thresholds = np.append(smoothed_medians,[smoothed_medians[-1]]*(arr.shape[0]-smoothed_medians.shape[0]))
     
     # compare the original array to the threshold index to find the outliers
+    outliers = ((arr>(time_thresholds*threshold)) |  (arr<-(time_thresholds*threshold)))
+    
+    return outliers
+
+
+def std_outliers(arr:np.ndarray, window:int, threshold:float) -> np.ndarray:
+    '''
+    Find outliers based on standard deviation, using pandas
+
+    Parameters
+    ----------
+    arr : np.ndarray
+    window : int
+    threshold : float
+
+    Returns
+    -------
+    outliers : np.ndarray
+
+    '''
+    
+    #first make a threshold index:
+        
+    time_thresholds=pd.Series(arr).rolling(window).std().fillna(method='bfill')
+    
+    #compare the original array to the threshold index to find the outliers
+    
+    outliers = ((arr>(time_thresholds*threshold)) |  (arr<-(time_thresholds*threshold)))
+    
+    return outliers
+
+
+def mean_outliers(arr:np.ndarray, window:int, threshold:float) -> np.ndarray:
+    '''
+    Find outliers based on mean, using numpy convolve
+
+    Parameters
+    ----------
+    arr : np.ndarray
+    window : int
+    threshold : float
+
+    Returns
+    -------
+    outliers : np.ndarray
+
+    '''
+    
+    #first make a threshold index:
+        
+    time_thresholds=np.convolve(arr, np.ones(window)/window, mode='valid')
+    
+    #forward fill the terminal values
+    
+    time_thresholds=np.append(time_thresholds,[time_thresholds[-1]]*(len(arr)-len(time_thresholds)))
+    
+    #compare the original array to the threshold index to find the outliers
+    
     outliers = ((arr>(time_thresholds*threshold)) |  (arr<-(time_thresholds*threshold)))
     
     return outliers
