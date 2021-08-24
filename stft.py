@@ -10,8 +10,27 @@ import numpy as np
 import pandas as pd
 from beartype import beartype
 from scipy.signal import stft
-# from scipy.stats import zscore, median_abs_deviation
+from outlier_detection import get_outliers
 ########## ---------------------------------------------------------------- ##########
+
+def f_fill(arr:np.ndarray, axis:int = 0) -> np.ndarray:
+    """
+    Replace nans using pandas ffil method.
+
+    Parameters
+    ----------
+    arr : np.ndarray
+    axis : int, axis for filling operation
+
+    Returns
+    -------
+    np.ndarray
+
+    """
+    df = pd.DataFrame(arr)
+    df = df.fillna(method='ffill', axis = axis)
+    return  df.values
+
 
 class GetIndex():
     "Get index"
@@ -58,100 +77,6 @@ def get_freq_index(freq_vector:np.ndarray, freqs) -> np.ndarray:
 
     # get index 
     return vfunc(freqs)
-
-def f_fill(arr:np.ndarray, axis:int = 0) -> np.ndarray:
-    """
-    Replace nans using pandas ffil method.
-
-    Parameters
-    ----------
-    arr : np.ndarray
-    axis : int, axis for filling operation
-
-    Returns
-    -------
-    np.ndarray
-
-    """
-    df = pd.DataFrame(arr)
-    df = df.fillna(method='ffill', axis = axis)
-    return  df.values
-
-def get_threshold(vector:np.ndarray, threshold:float) -> dict:
-    """
-    Find threshold
-
-    Parameters
-    ----------
-    vector : np.ndarray
-    threshold : float
-
-    Returns
-    -------
-    dict, positive and negative outlier threshold
-
-    """
-    
-    # find positive and outlier threshold
-    outlier_threshold_pos = (np.median(vector) + (np.std(vector)*threshold))
-    
-    # find negative and outlier threshold
-    outlier_threshold_neg = (np.median(vector) - (np.std(vector)*threshold))
-    
-    return {'pos' : outlier_threshold_pos, 'neg': outlier_threshold_neg}
-
-def get_outliers(time_vector:np.ndarray, window:int, threshold:float) -> np.ndarray:
-    """
-    Find outliers from vector
-
-    Parameters
-    ----------
-    time_vector : np.ndarray
-    window : int
-    threshold : float
-
-    Returns
-    -------
-    outliers : np.ndarray
-
-    """
-    
-    # create vector
-    outliers = np.zeros(time_vector.shape, dtype = bool)
-    
-    # half window
-    half_win = int(np.ceil(window/2))
-    
-    ## start
-    # get baseline and threshold
-    baseline = time_vector[:half_win]
-    outlier_threshold = get_threshold(baseline, threshold)
-
-    for base_cnt,i in enumerate(range(half_win)):
-        # find outliers
-        outliers[i] = (baseline[base_cnt] < outlier_threshold['neg']) | (baseline[base_cnt] > outlier_threshold['pos'])
-    
-    ## middle  
-    # get baseline and threshold
-    for i in range(i+1, time_vector.shape[0] - half_win):
-        
-        # get baseline and threshold
-        baseline = time_vector[i - half_win : i + half_win]  
-        outlier_threshold = get_threshold(baseline, threshold)
-        
-        # find outliers
-        outliers[i] = (baseline[half_win] < outlier_threshold['neg']) | (baseline[half_win] > outlier_threshold['pos'])
-    
-    ## end
-    # get baseline and threshold
-    baseline = time_vector[i+1:]
-    outlier_threshold = get_threshold(baseline, threshold)
-    
-    for base_cnt,i in enumerate(range(i+1, time_vector.shape[0])):
-        # find outliers
-        outliers[i] = (baseline[base_cnt] < outlier_threshold['neg']) | (baseline[base_cnt] > outlier_threshold['pos'])
-
-    return outliers
 
 # Single PSD class
 class Stft:
@@ -282,14 +207,22 @@ class Stft:
         # replace outliers with nans
         pmat[:, outliers] = np.nan
         
-        # find row (freq) median value
-        row_med = np.nanmedian(pmat, axis=1)
-
-        # find indices that you need to replace
-        inds = np.where(np.isnan(pmat))
+        # convert to dataframe and fill missing
+        df = pd.DataFrame(pmat)
+        df = df.interpolate(method='nearest', limit_direction='forward', axis=1)
         
-        # place row medians in the indices.
-        pmat[inds] = np.take(row_med, inds[0])
+        # convert back to numpy array
+        pmat = df.values
+        
+        ## fill with median value
+        # # find row (freq) median value
+        # row_med = np.nanmedian(pmat, axis=1)
+
+        # # find indices that you need to replace
+        # inds = np.where(np.isnan(pmat))
+        
+        # # place row medians in the indices.
+        # pmat[inds] = np.take(row_med, inds[0])
         
         return pmat, outliers
 
