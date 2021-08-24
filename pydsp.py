@@ -118,7 +118,7 @@ def verify(ctx):
     Manual verification of PSDs
     """
     import matplotlib.pyplot as plt
-    from select_psd import matplotGui
+    from verify_psd import matplotGui
     from pick import pick
     
     # check if index file was not found
@@ -143,9 +143,7 @@ def verify(ctx):
     plt.subplots_adjust(bottom=0.15) # create space for buttons
     
     # add title and labels
-    callback.fig.suptitle('Select PSDs', fontsize=12)        # title
-    callback.fig.text(0.5, 0.09,'Frequency (Hz)', ha="center")                                          # xlabel
-    callback.fig.text(.02, .5, 'Power (V^2/Hz)', ha='center', va='center', rotation='vertical')         # ylabel
+    callback.fig.suptitle('Select PSDs', fontsize=12)                                                   # title
     callback.fig.text(0.9, 0.04,'**** KEY ** Previous : <-, Next: ->, Accept: Y, Reject: N ****' ,      # move/accept labels
                       ha="right", bbox=dict(boxstyle="square", ec=(1., 1., 1.), fc=(0.9, 0.9, 0.9),))              
                                                     
@@ -160,7 +158,7 @@ def verify(ctx):
 def plot(ctx, freq):
     """Enter plot menu"""
     
-    from psd_analysis import melted_power_area, melted_power_ratio, melted_psds, plot_mean_psds
+    from psd_analysis import melted_power_area, melted_power_ratio, melted_psds
     from pick import pick
     from facet_plot_gui import GridGraph
     
@@ -198,7 +196,7 @@ def plot(ctx, freq):
         data = melted_power_ratio(index_df, power_df,  ctx.obj['freq_ratios'], categories)
         
         # Graph interactive summary plot
-        GridGraph(ctx.obj['search_path'], ctx.obj['melted_power_mat'], data).draw_graph(ctx.obj['summary_plot_type'])
+        GridGraph(ctx.obj['search_path'], ctx.obj['power_area_mat'], data).draw_graph(ctx.obj['summary_plot_type'])
         return
     
     # get frequency
@@ -212,8 +210,12 @@ def plot(ctx, freq):
         return
     
     if option == 'mean PSDs':
-        df = melted_psds(index_df, power_df, freq_range, categories)
-        plot_mean_psds(df, categories)
+        # get psd data
+        psd_data = melted_psds(index_df, power_df, freq_range, categories)
+        
+        # Graph interactive PSD
+        GridGraph(ctx.obj['search_path'],  ctx.obj['psd_mat'], psd_data).draw_psd()
+        
     
     
 
