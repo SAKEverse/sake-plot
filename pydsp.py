@@ -96,7 +96,9 @@ def stft(ctx, freq):
                           
     # get power 
     power_df = get_pmat(index_df, fft_duration = ctx.obj['fft_win'],
-                        freq_range = ctx.obj['fft_freq_range'], f_noise = ctx.obj['mains_noise'])
+                        freq_range = ctx.obj['fft_freq_range'], 
+                        f_noise = ctx.obj['mains_noise'],
+                         outlier_threshold = ctx.obj['outlier_threshold'])
     
     # save index and power
     index_df.to_csv(ctx.obj['index_verified_path'], index = False)
