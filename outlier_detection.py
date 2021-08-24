@@ -7,6 +7,7 @@ Created on Tue Aug 24 10:09:35 2021
 
 import numpy as np
 from numba import njit
+import pandas as pd
 
 @njit
 def mad(arr):
@@ -111,14 +112,15 @@ def median_outliers(arr:np.ndarray, window:int, threshold:float) -> np.ndarray:
     # first make a threshold index:
         
     # divide the array into windows by reshaping, then find the median of each window, this makes an array of size: original_len/window    
-    medians = np.median(arr[:(arr.shape[0]//window)*window].reshape(-1,window), axis=1)
+    medians = pd.DataFrame(arr[:(arr.shape[0]//window)*window].reshape(-1,window)).mad(axis=1)
     
     # expand the array back to full size by interpolaing the in between values
     smoothed_medians = np.interp(np.linspace(0, medians.shape[0], medians.shape[0]*window), np.arange(medians.shape[0]), medians)
     
     # fill the end values 
     time_thresholds = np.append(smoothed_medians,[smoothed_medians[-1]]*(arr.shape[0]-smoothed_medians.shape[0]))
-    
+    import matplotlib as mpl
+    mpl.pyplot.plot(time_thresholds)
     # compare the original array to the threshold index to find the outliers
     outliers = ((arr>(time_thresholds*threshold)) |  (arr<-(time_thresholds*threshold)))
     
@@ -143,8 +145,11 @@ def std_outliers(arr:np.ndarray, window:int, threshold:float) -> np.ndarray:
     
     #first make a threshold index:
         
-    time_thresholds=pd.Series(arr).rolling(window).std().fillna(method='bfill')
-    
+    time_thresholds=np.array(pd.Series(arr).rolling(window).std().fillna(method='bfill'))
+    time_thresholds=time_thresholds[window//2:]
+    time_thresholds=np.append(time_thresholds,[time_thresholds[-1]]*(len(arr)-len(time_thresholds)))
+    import matplotlib as mpl
+    mpl.pyplot.plot(time_thresholds)
     #compare the original array to the threshold index to find the outliers
     
     outliers = ((arr>(time_thresholds*threshold)) |  (arr<-(time_thresholds*threshold)))
