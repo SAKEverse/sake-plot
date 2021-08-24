@@ -31,6 +31,7 @@ freq_ratios:
 mains_noise:
 - 59
 - 61
-melted_power_mat: power_area.csv
+power_area_mat: power_area.csv
+psd_mat: psd.csv
 search_path: C:\Users\panton01\Desktop\pydsp_analysis
 summary_plot_type: violin
