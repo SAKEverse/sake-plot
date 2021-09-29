@@ -87,7 +87,7 @@ class Stft:
     
     @beartype
     def __init__(self, fs:int, win_dur:int, freq_range:list, overlap:float = 0.5, 
-                 outlier_threshold = 8, mains_noise = [59, 61]):
+                 outlier_threshold = 8, mains_noise = [59, 61], outlier_window = 20):
         """
 
         Parameters
@@ -113,7 +113,8 @@ class Stft:
         
         self.outlier_threshold = outlier_threshold
         self.f_noise = mains_noise
-        
+        self.outlier_window = outlier_window
+
         # get frequency index
         self.f_idx = self.get_freq_idx(self.freq_range)
     
@@ -202,27 +203,27 @@ class Stft:
 
         """
         # get outliers
-        outliers = get_outliers(np.mean(pmat,axis=0), 31, self.outlier_threshold)
+        outliers = get_outliers(np.mean(pmat, axis=0), self.outlier_window, self.outlier_threshold)
 
-        # replace outliers with nans
+        # # replace outliers with nans
         pmat[:, outliers] = np.nan
         
-        # convert to dataframe and fill missing
+        # # convert to dataframe and fill missing
         df = pd.DataFrame(pmat)
         df = df.interpolate(method='nearest', limit_direction='forward', axis=1)
         
         # convert back to numpy array
         pmat = df.values
         
-        ## fill with median value
-        # # find row (freq) median value
-        # row_med = np.nanmedian(pmat, axis=1)
+        # fill with median value
+        # find row (freq) median value
+        row_med = np.nanmedian(pmat, axis=1)
 
-        # # find indices that you need to replace
-        # inds = np.where(np.isnan(pmat))
+        # find indices that you need to replace
+        inds = np.where(np.isnan(pmat))
         
-        # # place row medians in the indices.
-        # pmat[inds] = np.take(row_med, inds[0])
+        # place row medians in the indices.
+        pmat[inds] = np.take(row_med, inds[0])
         
         return pmat, outliers
 
