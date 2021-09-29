@@ -215,47 +215,47 @@ class matplotGui:
             self.save_idx() # save file to csv
             
             
-if __name__ == '__main__':
-    import yaml,os
-    import pandas as pd
-    from load_index import load_index
-    from matplotlib.widgets import Button, SpanSelector, TextBox
-        # define path and conditions for filtering
-    filename = 'file_index.csv'
-    parent_folder = r'C:\Users\panton01\Desktop\pydsp_analysis'
-    path =  os.path.join(parent_folder, filename)
+# if __name__ == '__main__':
+#     import yaml,os
+#     import pandas as pd
+#     from load_index import load_index
+#     from matplotlib.widgets import Button, SpanSelector, TextBox
+#         # define path and conditions for filtering
+#     filename = 'file_index.csv'
+#     parent_folder = r'C:\Users\panton01\Desktop\pydsp_analysis'
+#     path =  os.path.join(parent_folder, filename)
     
-    # enter filter conditions
-    filter_conditions = {'brain_region':['bla', 'pfc'], 'treatment':['baseline','vehicle']} #
+#     # enter filter conditions
+#     filter_conditions = {'brain_region':['bla', 'pfc'], 'treatment':['baseline','vehicle']} #
     
-    # define frequencies of interest
-    with open('settings.yaml', 'r') as file:
-        settings = yaml.load(file, Loader=yaml.FullLoader)
+#     # define frequencies of interest
+#     with open('settings.yaml', 'r') as file:
+#         settings = yaml.load(file, Loader=yaml.FullLoader)
     
-    #### ---------------------------------------------------------------- ####
+#     #### ---------------------------------------------------------------- ####
     
-    # load index and power dataframe
-    index_df = load_index(path)
-    power_df = pd.read_pickle(r'C:\Users\panton01\Desktop\pydsp_analysis\power_mat.pickle')
+#     # load index and power dataframe
+#     index_df = load_index(path)
+#     power_df = pd.read_pickle(r'C:\Users\panton01\Desktop\pydsp_analysis\power_mat.pickle')
        
-    # init gui object
-    callback = matplotGui(settings, index_df, power_df)
-    plt.subplots_adjust(bottom=0.15) # create space for buttons
+#     # init gui object
+#     callback = matplotGui(settings, index_df, power_df)
+#     plt.subplots_adjust(bottom=0.15) # create space for buttons
     
-    # add title and labels
-    callback.fig.suptitle('Select PSDs', fontsize=12)        # title
-    # callback.fig.text(0.5, 0.09,'Frequency (Hz)', ha="center")                                          # xlabel
-    # callback.fig.text(.02, .5, 'Power (V^2/Hz)', ha='center', va='center', rotation='vertical')         # ylabel
-    callback.fig.text(0.9, 0.04,'**** KEY: Previous = <-, Next = ->, Accept = y, Reject = n, Accept all = a, Reject all = r ****' ,      # move/accept labels
-                      ha="right", bbox=dict(boxstyle="square", ec=(1., 1., 1.), fc=(0.9, 0.9, 0.9),))              
+#     # add title and labels
+#     callback.fig.suptitle('Select PSDs', fontsize=12)        # title
+#     # callback.fig.text(0.5, 0.09,'Frequency (Hz)', ha="center")                                          # xlabel
+#     # callback.fig.text(.02, .5, 'Power (V^2/Hz)', ha='center', va='center', rotation='vertical')         # ylabel
+#     callback.fig.text(0.9, 0.04,'**** KEY: Previous = <-, Next = ->, Accept = y, Reject = n, Accept all = a, Reject all = r ****' ,      # move/accept labels
+#                       ha="right", bbox=dict(boxstyle="square", ec=(1., 1., 1.), fc=(0.9, 0.9, 0.9),))              
                                                     
-    # add key press
-    idx_out = callback.fig.canvas.mpl_connect('key_press_event', callback.keypress)
+#     # add key press
+#     idx_out = callback.fig.canvas.mpl_connect('key_press_event', callback.keypress)
     
-    # set useblit True on gtkagg for enhanced performance
-    # span = SpanSelector(callback.axs, callback.keypress, 'horizontal', useblit=True,
-    #     rectprops=dict(alpha=0.5, facecolor='red'))
-    # plt.show()
+#     # set useblit True on gtkagg for enhanced performance
+#     # span = SpanSelector(callback.axs, callback.keypress, 'horizontal', useblit=True,
+#     #     rectprops=dict(alpha=0.5, facecolor='red'))
+#     # plt.show()
 
 
 
