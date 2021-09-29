@@ -144,7 +144,7 @@ def verify(ctx):
     
     # add title and labels
     callback.fig.suptitle('Select PSDs', fontsize=12)                                                   # title
-    callback.fig.text(0.9, 0.04,'**** KEY ** Previous : <-, Next: ->, Accept: Y, Reject: N ****' ,      # move/accept labels
+    callback.fig.text(0.9, 0.04, '**** KEY: Previous = <-, Next = ->, Accept = y, Reject = n, Accept all = a, Reject all = r ****' ,      # move/accept labels
                       ha="right", bbox=dict(boxstyle="square", ec=(1., 1., 1.), fc=(0.9, 0.9, 0.9),))              
                                                     
     # add key press
@@ -187,7 +187,7 @@ def plot(ctx, freq):
         data = melted_power_area(index_df, power_df, ctx.obj['freq_ranges'], categories)
         
         # Graph interactive summary plot
-        GridGraph(ctx.obj['search_path'], ctx.obj['melted_power_mat'], data).draw_graph(ctx.obj['summary_plot_type'])
+        GridGraph(ctx.obj['search_path'], ctx.obj['power_mat_verified_path'], data).draw_graph(ctx.obj['summary_plot_type'])
         return
     
     if option == 'summary plot and data export - (power ratio)':
@@ -196,7 +196,7 @@ def plot(ctx, freq):
         data = melted_power_ratio(index_df, power_df,  ctx.obj['freq_ratios'], categories)
         
         # Graph interactive summary plot
-        GridGraph(ctx.obj['search_path'], ctx.obj['power_area_mat'], data).draw_graph(ctx.obj['summary_plot_type'])
+        GridGraph(ctx.obj['search_path'], ctx.obj['power_mat_verified_path'], data).draw_graph(ctx.obj['summary_plot_type'])
         return
     
     # get frequency
