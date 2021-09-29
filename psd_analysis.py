@@ -76,7 +76,7 @@ def get_power_ratio(pmat:np.ndarray, freq_vec:np.ndarray, freqs:np.ndarray) -> n
         
 @beartype
 def get_pmat(index_df:PandasDf, fft_duration:int = 5, overlap:float = 0.5, freq_range:list = [1, 120], 
-             f_noise = [59, 61], outlier_threshold = 8) -> PandasDf:
+             f_noise = [59, 61], outlier_threshold = 8, outlier_window = 11) -> PandasDf:
     """
     Run Stft analysis on signals retrieved using rows of index_df.
 
@@ -106,7 +106,8 @@ def get_pmat(index_df:PandasDf, fft_duration:int = 5, overlap:float = 0.5, freq_
            
         # Init Stft object
         stft_obj =  Stft(int(index_df['sampling_rate'][i]), fft_duration, freq_range,
-                         overlap = overlap, mains_noise = f_noise, outlier_threshold = outlier_threshold)
+                         overlap = overlap, mains_noise = f_noise, 
+                         outlier_threshold = outlier_threshold, outlier_window = outlier_window)
 
         # get frequency vector and power matrix 
         df.at[i, 'freq'], df.at[i, 'pmat'], df.at[i, 'outliers'] = stft_obj.run_stft(signal)

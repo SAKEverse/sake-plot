@@ -1,9 +1,8 @@
 fft_freq_range:
 - 1
 - 150
-fft_win: 5
 fft_overlap: 0.5
-outlier_threshold: 4
+fft_win: 5
 file_index: file_index.csv
 file_index_verified: file_index_verified.csv
 file_power_mat: power_mat.pickle
@@ -14,8 +13,8 @@ freq_ranges:
 - - 6
   - 12
 - - 15
-  - 29
-- - 30
+  - 30
+- - 40
   - 70
 - - 80
   - 120
@@ -31,6 +30,8 @@ freq_ratios:
 mains_noise:
 - 59
 - 61
+outlier_threshold: 7
+outlier_window: 60
 power_area_mat: power_area.csv
 psd_mat: psd.csv
 search_path: C:\Users\panton01\Desktop\pydsp_analysis
