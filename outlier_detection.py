@@ -107,7 +107,7 @@ def rolling_outliers(arr:np.ndarray, window:int, threshold:float) -> np.ndarray:
     
     ## middle  
     # get baseline and threshold
-    for i in range(i+1, arr.shape[0] - half_win):
+    for i in range(i, arr.shape[0] - half_win):
         # get baseline and threshold
         baseline = arr[i - half_win : i + half_win]  
         median_value[i] = np.median(baseline)
