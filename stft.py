@@ -8,6 +8,7 @@ Created on Tue Aug 10 11:11:18 2021
 ########## ------------------------------- IMPORTS ------------------------ ##########
 import numpy as np
 import pandas as pd
+from typing import Union, List
 from beartype import beartype
 from scipy.signal import stft as scipy_stft
 from outlier_detection import get_outliers
@@ -36,7 +37,7 @@ class GetIndex():
         return (np.abs(self.array - value)).argmin()
 
 @beartype
-def get_freq_index(freq_vector:np.ndarray, freqs) -> np.ndarray:
+def get_freq_index(freq_vector:np.ndarray, freqs: List[Union[int, float]]) -> np.ndarray:
     """
     Get frequency index.
 
@@ -78,6 +79,7 @@ def f_fill(arr:np.ndarray, axis:int = 0) -> np.ndarray:
     df = df.fillna(method='ffill', axis = axis)
     return  df.values
 
+
 class Properties:
     " Convert dictionary to class properties and check types"
     
@@ -94,6 +96,36 @@ class Properties:
                     raise(Exception('-> Got ' + str(type(value)) + '. Expected: ' + str(self.types[key])   + '.\n'))
             else:
                 raise(Exception('-> Variable *' + key + '* was not found.\n'))
+
+@beartype                          
+def check_range_input(input_range:list, lower_limit : Union[float, int], upper_limit: Union[float, int]):
+    """
+    Check whether input_range list is valid
+
+    Parameters
+    ----------
+    input_range: list
+    lower_limit : (float|int).
+    upper_limit : (float|int)
+
+    Returns
+    -------
+    None.
+
+    """
+    
+    # check that there are only two real numbers [lower, upper] limit within nyquist limit
+    if all(isinstance(x, (int, float)) for x in input_range) == False:
+        raise(Exception('-> Elements in list have to be numeric.\n'))
+    if len(input_range) != 2:
+        raise(Exception('-> Got length of freq_range : ' + str(len(input_range)) + '. Expected : 2.\n'))
+    if input_range[0] > input_range[1]:
+        raise(Exception('-> The second element of freq_range has to be greater than the first.\n'))
+    if any(np.array(input_range) < lower_limit):
+        raise(Exception('-> Values can not be below lower limit: ' + str(lower_limit) +'.\n'))
+    if any(np.array(input_range) > upper_limit):
+        raise(Exception('-> Values can not exceed upper limit: ' + str(upper_limit) +'.\n'))
+
                     
 # Single PSD class
 class Stft(Properties):
@@ -124,6 +156,12 @@ class Stft(Properties):
         self.winsize = int(self.fs * self.win_dur)              # window size (samples)  
         self.overlap_size = int(self.winsize * self.overlap)    # overlap size (samples)
         self.f_idx = self.get_freq_idx(self.freq_range)         # get frequency index
+        
+        # check that there are only two real numbers [lower, upper] limit within nyquist limit
+        check_range_input(self.freq_range, 0, self.fs/2)
+        
+        # check if mains noise is within user specified frequency range
+        check_range_input(self.mains_noise, self.freq_range[0], self.freq_range[1])
     
     @beartype
     def get_freq_idx(self, f:list) -> np.ndarray:
@@ -139,19 +177,7 @@ class Stft(Properties):
         freq_idx : list, frequency index value(int)
 
         """
-        
-        # check that there are only two real numbers [lower, upper] limit within nyquist limit
-        if all(isinstance(x, (int, float)) for x in f) == False:
-            raise(Exception('-> Elements in list have to be numeric.\n'))
-        if len(f) != 2:
-            raise(Exception('-> Got length of freq_range : ' + str(len(f)) + '. Expected : 2.\n'))
-        if f[0] > f[1]:
-            raise(Exception('-> The second element of freq_range has to be greater than the first.\n'))
-        if any(np.array(f) < 0):
-            raise(Exception('-> Only positive values are allowed.\n'))
-        if any(np.array(f) > self.fs/2):
-            raise(Exception('-> Values can not exceed nyquist limit (fs/2).\n'))
-        
+
         freq_idx = np.zeros(len(f), dtype = np.int32)
         for i in range(len(f)):
             freq_idx[i] = int(f[i]*(self.winsize/self.fs))
@@ -191,16 +217,15 @@ class Stft(Properties):
         ----------
         freq : np.ndarray
         pmat : np.ndarray
-        f_noise : list
 
         Returns
         -------
         pmat : np.ndarray
 
         """
-
+        
         # find frequency index
-        f_idx = get_freq_index(freq, self.f_noise)
+        f_idx = get_freq_index(freq, self.mains_noise)
 
         # set noise index to NaNs
         pmat[f_idx[0]:f_idx[1]+1,:] = np.nan
