@@ -9,27 +9,9 @@ Created on Tue Aug 10 11:11:18 2021
 import numpy as np
 import pandas as pd
 from beartype import beartype
-from scipy.signal import stft
+from scipy.signal import stft as scipy_stft
 from outlier_detection import get_outliers
 ########## ---------------------------------------------------------------- ##########
-
-def f_fill(arr:np.ndarray, axis:int = 0) -> np.ndarray:
-    """
-    Replace nans using pandas ffil method.
-
-    Parameters
-    ----------
-    arr : np.ndarray
-    axis : int, axis for filling operation
-
-    Returns
-    -------
-    np.ndarray
-
-    """
-    df = pd.DataFrame(arr)
-    df = df.fillna(method='ffill', axis = axis)
-    return  df.values
 
 
 class GetIndex():
@@ -75,19 +57,53 @@ def get_freq_index(freq_vector:np.ndarray, freqs) -> np.ndarray:
     # vectorize function
     vfunc = np.vectorize(f.find_nearest)
 
-    # get index 
+    # return index 
     return vfunc(freqs)
 
+def f_fill(arr:np.ndarray, axis:int = 0) -> np.ndarray:
+    """
+    Replace nans using pandas ffil method.
+
+    Parameters
+    ----------
+    arr : np.ndarray
+    axis : int, axis for filling operation
+
+    Returns
+    -------
+    np.ndarray
+
+    """
+    df = pd.DataFrame(arr)
+    df = df.fillna(method='ffill', axis = axis)
+    return  df.values
+
+class Properties:
+    " Convert dictionary to class properties and check types"
+    
+    types = {'fs':int, 'win_dur':int, 'freq_range':list, 
+             'overlap':float, 'mains_noise':list}
+    
+    def __init__(self, properties:dict):
+        # Add dictionary elements to object attributes if variable names and types match
+        for key, value in properties.items():
+            if key in self.types:
+                if self.types[key] == type(value):
+                    setattr(self, key, value)
+                else:
+                    raise(Exception('-> Got ' + str(type(value)) + '. Expected: ' + str(self.types[key])   + '.\n'))
+            else:
+                raise(Exception('-> Variable *' + key + '* was not found.\n'))
+                    
 # Single PSD class
-class Stft:
+class Stft(Properties):
     """  
     Perform Stft analysis on 1D signal.
 
     """
     
     @beartype
-    def __init__(self, fs:int, win_dur:int, freq_range:list, overlap:float = 0.5, 
-                 outlier_threshold = 8, mains_noise = [59, 61], outlier_window = 20):
+    def __init__(self, properties:dict):
         """
 
         Parameters
@@ -104,19 +120,10 @@ class Stft:
         """
 
         # pass parameters to object
-        self.fs = fs                                            # sampling rate (samples per second)
-        self.win_dur = win_dur                                  # window duration (seconds)
-        self.winsize = int(fs * win_dur)                        # window size (samples)  
-        self.overlap = overlap                                  # overlap (ratio)
+        super().__init__(properties)
+        self.winsize = int(self.fs * self.win_dur)              # window size (samples)  
         self.overlap_size = int(self.winsize * self.overlap)    # overlap size (samples)
-        self.freq_range = freq_range                            # frequency range (Hz)
-        
-        self.outlier_threshold = outlier_threshold
-        self.f_noise = mains_noise
-        self.outlier_window = outlier_window
-
-        # get frequency index
-        self.f_idx = self.get_freq_idx(self.freq_range)
+        self.f_idx = self.get_freq_idx(self.freq_range)         # get frequency index
     
     @beartype
     def get_freq_idx(self, f:list) -> np.ndarray:
@@ -133,9 +140,22 @@ class Stft:
 
         """
         
+        # check that there are only two real numbers [lower, upper] limit within nyquist limit
+        if all(isinstance(x, (int, float)) for x in f) == False:
+            raise(Exception('-> Elements in list have to be numeric.\n'))
+        if len(f) != 2:
+            raise(Exception('-> Got length of freq_range : ' + str(len(f)) + '. Expected : 2.\n'))
+        if f[0] > f[1]:
+            raise(Exception('-> The second element of freq_range has to be greater than the first.\n'))
+        if any(np.array(f) < 0):
+            raise(Exception('-> Only positive values are allowed.\n'))
+        if any(np.array(f) > self.fs/2):
+            raise(Exception('-> Values can not exceed nyquist limit (fs/2).\n'))
+        
         freq_idx = np.zeros(len(f), dtype = np.int32)
-        for i in range(len(f)): 
+        for i in range(len(f)):
             freq_idx[i] = int(f[i]*(self.winsize/self.fs))
+        
         return freq_idx
         
     @beartype
@@ -154,7 +174,10 @@ class Stft:
 
         """
         
-        f, t, pmat = stft(input_wave, self.fs, nperseg=self.winsize, noverlap = self.overlap_size)
+        # get spectrogram
+        f, t, pmat = scipy_stft(input_wave, self.fs, nperseg=self.winsize, noverlap = self.overlap_size)
+        
+        # get real power
         pmat = np.square(np.abs(pmat[self.f_idx[0] : self.f_idx[1]+1,:]))
         
         return f[self.f_idx[0] : self.f_idx[1]+1], pmat
@@ -227,7 +250,7 @@ class Stft:
         
         return pmat, outliers
 
-
+    @beartype
     def run_stft(self, input_wave:np.ndarray):
         """
         Get stft and remove mains noise.
@@ -250,10 +273,10 @@ class Stft:
         # remove mains nose
         pmat = self.remove_mains(freq, pmat)
         
-        # remove outliers
-        pmat, outliers = self.remove_outliers(pmat)
+        # # remove outliers
+        # pmat, outliers = self.remove_outliers(pmat)
         
-        return freq, pmat, outliers
+        return freq, pmat#, outliers
         
         
         
