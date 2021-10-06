@@ -14,15 +14,48 @@ def properties():
     return prop
 
 @pytest.fixture
-def frequency():
-    return 5
+def fixed_frequency():
+    def _method(index):
+        freq = [5, 5 ,5, 5, 5, 5]
+        return freq[index]
+    return _method
 
 @pytest.fixture
-def simple_sine(properties, frequency):
+def frequency():
+    def _method(index):
+        freq = [5, 10 ,20, 60, 80, 100]
+        return freq[index]
+    return _method
+
+@pytest.fixture
+def ampltitude():
+    def _method(index):
+        freq = [20, 10 ,15, 5, 6, 3]
+        return freq[index]
+    return _method
+
+@pytest.fixture
+def simple_sine(): 
+    def _method(properties, frequency, ampltitude, index):
+        # Get x values of the sine wave
+        time_duration = 30 # in seconds
+        t = np.arange(0, time_duration, 1/properties['fs']);
+        return np.sin(frequency(index)*t*np.pi*2) * ampltitude(index)
+    return _method
+
+@pytest.fixture
+def mixed_sine(properties, frequency, ampltitude, index):
+
     # Get x values of the sine wave
     time_duration = 30 # in seconds
     t = np.arange(0, time_duration, 1/properties['fs']);
-    return np.sin(frequency*t*np.pi*2)
+    
+    # create sine waves
+    y1 = np.sin(frequency(index[0])*t*np.pi*2) * ampltitude(index[0])
+    y2 = np.sin(frequency(index[1])*t*np.pi*2) * ampltitude(index[1])   
+    return y1 + y2
+
+
 ####--------------------------------------------------- ######
 
 
@@ -100,6 +133,7 @@ def test_freq_range(properties:dict, freq_range:list):
     with pytest.raises(Exception):
         # init stft object
         Stft(properties)
+
         
 @pytest.mark.parametrize("mains_noise", [ ([1, 10 ,200]),
                                           ([1, '10']),
@@ -109,7 +143,7 @@ def test_freq_range(properties:dict, freq_range:list):
                                           ])
 def test_mains_noise_range(properties:dict, mains_noise:list):
     """
-    # Test whether inappropriate mains noise range inputs raise exception
+    Test whether inappropriate mains noise range inputs raise exception
 
     Parameters
     ----------
@@ -124,25 +158,64 @@ def test_mains_noise_range(properties:dict, mains_noise:list):
         # init stft object
         Stft(properties)
 
+
+@pytest.mark.parametrize("index", [(0), (1), (2), (3), (4)])    
+def test_stft_simple_sine_freq(simple_sine, properties, frequency, ampltitude, index):
+    """
+    Test if correct peak frequency is detected from stft analysis
+
+    Parameters
+    ----------
+    simple_sine : func, create sine wave
+    properties : dict, with main properties
+    frequency : func, get freqeuncy value based on index
+    ampltitude : func, get amplitude value based on index
+    index : int
+
+    Returns
+    -------
+    None.
+
+    """
     
-def test_stft_transform(simple_sine, properties, frequency):
+    # init stft object
+    stft_obj = Stft(properties)
+
+    # get stft
+    freq, pmat = stft_obj.get_stft(simple_sine(properties, frequency, ampltitude, index))
     
-        # init stft object
-        stft_obj = Stft(properties)
+    # get psd
+    psd = np.mean(pmat, axis = 1)
     
-        # get stft
-        freq, pmat = stft_obj.get_stft(simple_sine)
-        
-        # get psd
-        psd = np.mean(pmat,axis=1)
-        
-        # get peak frequency
-        peak_freq = freq[np.argmax(psd)]
-        
-        assert peak_freq == frequency
+    # get peak frequency
+    peak_freq = freq[np.argmax(psd)]
+    
+    assert peak_freq == frequency(index)
 
 
-
+@pytest.mark.parametrize("index", [([0, 2]), ([3, 1]), ([5, 4]), ([1, 1])])    
+def test_stft_simple_sine_amp(simple_sine, properties, fixed_frequency, ampltitude, index):
+        
+        power = []
+        amp = []
+        for i in index:
+            # init stft object
+            stft_obj = Stft(properties)
+        
+            # get stft
+            freq_vector, pmat = stft_obj.get_stft(simple_sine(properties, fixed_frequency, ampltitude, i))
+            
+            # get psd
+            psd = np.mean(pmat, axis = 1)
+            
+            # get frequency index
+            freq_idx = get_freq_index(freq_vector, [fixed_frequency(i)])
+            
+            # get power
+            power.append(psd[freq_idx])
+            amp.append(ampltitude(i))
+        
+        assert np.sign(power[0] - power[1]) == np.sign(amp[0] - amp[1])
 
 
 
