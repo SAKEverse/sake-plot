@@ -10,7 +10,7 @@ from stft import get_freq_index, Stft
 @pytest.fixture
 def properties():
     prop = {'fs':4000, 'win_dur':5, 'freq_range': [5, 121], 
-            'overlap':0.5, 'mains_noise': [50, 100]}
+            'overlap':0.5, 'mains_noise': [58, 62]}
     return prop
 
 @pytest.fixture
@@ -36,6 +36,15 @@ def ampltitude():
 
 @pytest.fixture
 def simple_sine(): 
+    def _method(properties, frequency, ampltitude, index):
+        # Get x values of the sine wave
+        time_duration = 30 # in seconds
+        t = np.arange(0, time_duration, 1/properties['fs']);
+        return np.sin(frequency(index)*t*np.pi*2) * ampltitude(index)
+    return _method
+
+@pytest.fixture
+def noise_sine(): 
     def _method(properties, frequency, ampltitude, index):
         # Get x values of the sine wave
         time_duration = 30 # in seconds
@@ -208,7 +217,7 @@ def test_stft_simple_sine_amp(simple_sine, properties, fixed_frequency, ampltitu
             # get psd
             psd = np.mean(pmat, axis = 1)
             
-            # get frequency index
+            # get frequency index to find peak power
             freq_idx = get_freq_index(freq_vector, [fixed_frequency(i)])
             
             # get power
@@ -218,7 +227,32 @@ def test_stft_simple_sine_amp(simple_sine, properties, fixed_frequency, ampltitu
         assert np.sign(power[0] - power[1]) == np.sign(amp[0] - amp[1])
 
 
+def test_mains_noise(simple_sine, properties, frequency, ampltitude):
+    
+    index = 3 # for 60 Hz
+    
+    # init stft object
+    stft_obj = Stft(properties)
 
+    # get stft
+    freq_vector, pmat = stft_obj.get_stft(simple_sine(properties, frequency, ampltitude, index))
+    
+    # get frequency index to find peak power
+    freq_idx = get_freq_index(freq_vector, [frequency(index)])
+    
+    # get power before noise removal
+    psd = np.mean(pmat, axis = 1)
+    power_before_noise_removal =  psd[freq_idx]
+    
+    # remove surrounding frequency
+    # freq = [frequency(index)-2, frequency(index)+2 ]
+    pmat = stft_obj.remove_mains(freq_vector, pmat)
+    
+    # get power after noise removal
+    psd = np.mean(pmat, axis = 1)
+    power_after_noise_removal =  psd[freq_idx]    
+
+    assert power_before_noise_removal > power_after_noise_removal
 
 
 
