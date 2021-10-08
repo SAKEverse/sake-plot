@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Aug  9 14:06:07 2021
-
-@author: panton01
-"""
-
 ########## ------------------------------- IMPORTS ------------------------ ##########
 import os
 import adi

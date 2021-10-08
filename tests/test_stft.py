@@ -1,4 +1,3 @@
-
 ####----------------------- IMPORTS ------------------- ######
 import pytest
 import numpy as np
@@ -204,30 +203,70 @@ def test_stft_simple_sine_freq(simple_sine, properties, frequency, ampltitude, i
 
 @pytest.mark.parametrize("index", [([0, 2]), ([3, 1]), ([5, 4]), ([1, 1])])    
 def test_stft_simple_sine_amp(simple_sine, properties, fixed_frequency, ampltitude, index):
+    """
+    
+
+    Parameters
+    ----------
+    simple_sine : TYPE
+        DESCRIPTION.
+    properties : TYPE
+        DESCRIPTION.
+    fixed_frequency : TYPE
+        DESCRIPTION.
+    ampltitude : TYPE
+        DESCRIPTION.
+    index : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
         
-        power = []
-        amp = []
-        for i in index:
-            # init stft object
-            stft_obj = Stft(properties)
+    power = []
+    amp = []
+    for i in index:
+        # init stft object
+        stft_obj = Stft(properties)
+    
+        # get stft
+        freq_vector, pmat = stft_obj.get_stft(simple_sine(properties, fixed_frequency, ampltitude, i))
         
-            # get stft
-            freq_vector, pmat = stft_obj.get_stft(simple_sine(properties, fixed_frequency, ampltitude, i))
-            
-            # get psd
-            psd = np.mean(pmat, axis = 1)
-            
-            # get frequency index to find peak power
-            freq_idx = get_freq_index(freq_vector, [fixed_frequency(i)])
-            
-            # get power
-            power.append(psd[freq_idx])
-            amp.append(ampltitude(i))
+        # get psd
+        psd = np.mean(pmat, axis = 1)
         
-        assert np.sign(power[0] - power[1]) == np.sign(amp[0] - amp[1])
+        # get frequency index to find peak power
+        freq_idx = get_freq_index(freq_vector, [fixed_frequency(i)])
+        
+        # get power
+        power.append(psd[freq_idx])
+        amp.append(ampltitude(i))
+    
+    assert np.sign(power[0] - power[1]) == np.sign(amp[0] - amp[1])
 
 
 def test_mains_noise(simple_sine, properties, frequency, ampltitude):
+    """
+    
+
+    Parameters
+    ----------
+    simple_sine : TYPE
+        DESCRIPTION.
+    properties : TYPE
+        DESCRIPTION.
+    frequency : TYPE
+        DESCRIPTION.
+    ampltitude : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
     
     index = 3 # for 60 Hz
     
@@ -253,6 +292,33 @@ def test_mains_noise(simple_sine, properties, frequency, ampltitude):
     power_after_noise_removal =  psd[freq_idx]    
 
     assert power_before_noise_removal > power_after_noise_removal
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Aug 10 11:11:18 2021
-
-@author: panton01
-"""
-
 ########## ------------------------------- IMPORTS ------------------------ ##########
 import numpy as np
 import pandas as pd
@@ -36,7 +29,7 @@ class GetIndex():
         """
         return (np.abs(self.array - value)).argmin()
 
-@beartype
+# @beartype
 def get_freq_index(freq_vector:np.ndarray, freqs: List[Union[int, float]]) -> np.ndarray:
     """
     Get frequency index.
