@@ -29,8 +29,8 @@ class GetIndex():
         """
         return (np.abs(self.array - value)).argmin()
 
-# @beartype
-def get_freq_index(freq_vector:np.ndarray, freqs: List[Union[int, float]]) -> np.ndarray:
+@beartype
+def get_freq_index(freq_vector:np.ndarray, freqs) -> np.ndarray: #freqs: List[Union[int, float]]
     """
     Get frequency index.
 

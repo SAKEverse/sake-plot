@@ -1,57 +1,121 @@
 ####----------------------- IMPORTS ------------------- ######
 import numpy as np
-from stft import get_freq_index, Stft
+from stft import get_freq_index, Stft, Properties
 from matplotlib.pyplot import plot, hist
 ####--------------------------------------------------- ######
 
-# define parameters
-properties = {'fs':1000, 'win_dur':5, 'freq_range': [5, 121], 
-            'overlap':0.5, 'mains_noise': [58, 62]}
-freq = 60
-fs = properties['fs']
+class SimSignal(Properties):
+    """ Simulate eeg/lgp signals
+    """
+    
+    def __init__(self, properties:dict, time_duration:np.ndarray):
+        
+        # pass parameters to object
+        super().__init__(properties)
+        self.time_duration = time_duration
+        
+        # create time vector
+        self.t = np.arange(0, self.time_duration, 1/self.fs);
+    
+    def make_sine(self, freq:float, amp:float):
+        return np.sin(freq*self.t*np.pi*2) * amp
+        
+    def make_sine_norm(self, freq:float, amp:float, rhythm):
+        """
+        Create normally distributed sine wave
 
-# create time vector
-signal_time = 60
-t = np.arange(0, signal_time + (1/fs), 1/fs)
+        Parameters
+        ----------
+        amp : float, amplitude
+        freq : float, frequency
+        rhythm : float, rhythmicity 0 to inf
 
-# create template wave
-template = np.sin(freq*t[0:int(np.ceil(fs/freq))+1]*np.pi*2)
+        Returns
+        -------
+        signal : np.ndarray, 1d signal
 
-# create normaly distributed events
-mu = 1/freq
-sigma = mu/1000
-n_events = int(np.ceil(t.shape[0]/template.shape[0]))
-s = np.random.normal(mu, sigma, n_events+100)
+        """
 
-# get inter event interval and find index
-isi = np.cumsum(s)
-index = get_freq_index(t, isi)
+        # create template wave
+        template = np.sin(freq*self.t[0:int(np.ceil(self.fs/freq))+1]*np.pi*2)
 
-# create logic vector to be convolved
-logic_vector = np.zeros(t.shape)
-logic_vector[index] = 1
+        # create normaly distributed events
+        mu = 1/freq
+        sigma = mu/(rhythm + (1^-10))
+        n_events = int(np.ceil(self.t.shape[0]/template.shape[0]))
+        s = np.random.normal(mu, sigma, int(n_events *1.2))
 
-# create convolved signal
-signal = np.convolve(logic_vector, template, mode = 'same')
+        # get inter event interval and find index
+        isi = np.cumsum(s)
+        index = get_freq_index(self.t, isi)
 
-plot(signal)
-# hist(index, bins = 50)
+        # create logic vector to be convolved
+        logic_vector = np.zeros(self.t.shape)
+        logic_vector[index] = 1
 
-# get power
-# stft_obj = Stft(properties)
-# freq_vector, pmat = stft_obj.get_stft(signal)
-# psd = np.mean(pmat, axis = 1)
-# plot(freq_vector, psd)
+        # return convolved signal
+        return np.convolve(logic_vector, template, mode = 'same') * amp
+
+    def add_sines(self, freq:list, amp:list):
+        """
+        Add multiple sine waves
+
+        Parameters
+        ----------
+        freq : list
+        amp : list
+
+        Returns
+        -------
+        signal :  np.ndarray, 1d signal
+
+        """
+
+        signal = np.zeros(self.t.shape)
+        for f,a in zip(freq, amp):
+           signal += self.make_sine(f, a)
+        return signal
+    
+    def add_sines_norm(self, freq:list, amp:list, rhythm:list):
+        """
+        Add multiple sine waves
+
+        Parameters
+        ----------
+        freq : list
+        amp : list
+
+        Returns
+        -------
+        signal :  np.ndarray, 1d signal
+
+        """
+
+        signal = np.zeros(self.t.shape)
+        for i in range(len(freq)):
+           signal += self.make_sine_norm(freq[i], amp[i], rhythm[i])
+        return signal
 
 
+if __name__ == '__main__':
+    properties = {'fs':4000, 'win_dur':5, 'freq_range': [5, 121], 
+                'overlap':0.5, 'mains_noise': [59, 61]}
+    
+    freq = [10, 60]
+    amp = [5, 10]
+    rhythm = [15, 15]
+    time_duration = 30              # in seconds
+    obj = SimSignal(properties, time_duration)
+    signal = obj.add_sines_norm(freq, amp, rhythm) + obj.add_sines([60], [3])
+    # plot(signal)
 
+    # get power
+    stft_obj = Stft(properties)
+    freq_vector, pmat = stft_obj.get_stft(signal)
 
+    plot(freq_vector, np.mean(pmat, axis = 1))
 
-
-
-
-
-
-
-
+    pmat = stft_obj.remove_mains(freq_vector, pmat)
+    
+    plot(freq_vector, np.mean(pmat, axis = 1))
 

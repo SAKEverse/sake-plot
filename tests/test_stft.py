@@ -1,6 +1,7 @@
 ####----------------------- IMPORTS ------------------- ######
 import pytest
 import numpy as np
+from simulate_signals import SimSignal
 from stft import get_freq_index, Stft
 ####--------------------------------------------------- ######
 
