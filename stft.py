@@ -68,8 +68,10 @@ def f_fill(arr:np.ndarray, axis:int = 0) -> np.ndarray:
     np.ndarray
 
     """
+    # convert to dataframe and fill missing
     df = pd.DataFrame(arr)
-    df = df.fillna(method='ffill', axis = axis)
+    df = df.interpolate(method='nearest', limit_direction='forward', axis = axis)
+
     return  df.values
 
 
@@ -246,15 +248,11 @@ class Stft(Properties):
         # get outliers
         outliers = get_outliers(np.mean(pmat, axis=0), self.outlier_window, self.outlier_threshold)
 
-        # # replace outliers with nans
+        # eplace outliers with nans
         pmat[:, outliers] = np.nan
         
-        # # convert to dataframe and fill missing
-        df = pd.DataFrame(pmat)
-        df = df.interpolate(method='nearest', limit_direction='forward', axis=1)
-        
-        # convert back to numpy array
-        pmat = df.values
+        # interpolate missing data
+        pmat = f_fill(pmat, axis=1)
         
         # fill with median value
         # find row (freq) median value

@@ -4,8 +4,7 @@ import numpy as np
 from simulate_signals import SimSignal
 from stft import get_freq_index, Stft
 ####--------------------------------------------------- ######
-
-
+time_duration = 30 # for signal duration (in seconds)
 ####----------------------- Fixtures ------------------- ######
 @pytest.fixture
 def properties():
@@ -37,32 +36,28 @@ def ampltitude():
 @pytest.fixture
 def simple_sine(): 
     def _method(properties, frequency, ampltitude, index):
-        # Get x values of the sine wave
-        time_duration = 30 # in seconds
-        t = np.arange(0, time_duration, 1/properties['fs']);
-        return np.sin(frequency(index)*t*np.pi*2) * ampltitude(index)
+        obj = SimSignal(properties, time_duration)        
+        return obj.add_sines([frequency(index)], [ampltitude(index)] )
     return _method
 
 @pytest.fixture
-def noise_sine(): 
-    def _method(properties, frequency, ampltitude, index):
-        # Get x values of the sine wave
-        time_duration = 30 # in seconds
-        t = np.arange(0, time_duration, 1/properties['fs']);
-        return np.sin(frequency(index)*t*np.pi*2) * ampltitude(index)
+def mains_noise_sine(): 
+    def _method(properties, mains_noise_freq):
+        rhythm = [15, 15]
+        freq = [10, mains_noise_freq]
+        freq_noise = [mains_noise_freq]
+        amp = [5, 10]
+        amp_noise = [3]
+        obj = SimSignal(properties, time_duration)
+        return  obj.add_sines_norm(freq, amp, rhythm) + obj.add_sines(freq_noise, amp_noise)
     return _method
 
 @pytest.fixture
 def mixed_sine(properties, frequency, ampltitude, index):
-
-    # Get x values of the sine wave
-    time_duration = 30 # in seconds
-    t = np.arange(0, time_duration, 1/properties['fs']);
-    
-    # create sine waves
-    y1 = np.sin(frequency(index[0])*t*np.pi*2) * ampltitude(index[0])
-    y2 = np.sin(frequency(index[1])*t*np.pi*2) * ampltitude(index[1])   
-    return y1 + y2
+   def _method(properties, frequency, ampltitude, index):
+        obj = SimSignal(properties, time_duration)        
+        return obj.add_sines(frequency(index), ampltitude(index))
+   return _method
 
 
 ####--------------------------------------------------- ######
@@ -179,7 +174,7 @@ def test_stft_simple_sine_freq(simple_sine, properties, frequency, ampltitude, i
     properties : dict, with main properties
     frequency : func, get freqeuncy value based on index
     ampltitude : func, get amplitude value based on index
-    index : int
+    index : int, used to select freq and amplitude
 
     Returns
     -------
@@ -205,20 +200,15 @@ def test_stft_simple_sine_freq(simple_sine, properties, frequency, ampltitude, i
 @pytest.mark.parametrize("index", [([0, 2]), ([3, 1]), ([5, 4]), ([1, 1])])    
 def test_stft_simple_sine_amp(simple_sine, properties, fixed_frequency, ampltitude, index):
     """
-    
+    Test if relative amplitude of the signal is translated to relative PSD power
 
     Parameters
     ----------
-    simple_sine : TYPE
-        DESCRIPTION.
-    properties : TYPE
-        DESCRIPTION.
-    fixed_frequency : TYPE
-        DESCRIPTION.
-    ampltitude : TYPE
-        DESCRIPTION.
-    index : TYPE
-        DESCRIPTION.
+    simple_sine : func, create sine wave
+    properties : dict, with main properties
+    fixed_frequency : func, get fixed freqeuncy value from function
+    ampltitude : func, get amplitude value based on index
+    index : int, used to select freq and amplitude
 
     Returns
     -------
@@ -248,51 +238,52 @@ def test_stft_simple_sine_amp(simple_sine, properties, fixed_frequency, ampltitu
     assert np.sign(power[0] - power[1]) == np.sign(amp[0] - amp[1])
 
 
-def test_mains_noise(simple_sine, properties, frequency, ampltitude):
+def test_mains_noise(mains_noise_sine, properties):
     """
-    
+    Test mains noise removal from PSD
 
     Parameters
     ----------
-    simple_sine : TYPE
-        DESCRIPTION.
-    properties : TYPE
-        DESCRIPTION.
-    frequency : TYPE
-        DESCRIPTION.
-    ampltitude : TYPE
-        DESCRIPTION.
+    mains_noise_sine : func, create signal with mains noise
+    properties : dict, with main properties
 
     Returns
     -------
     None.
 
     """
-    
-    index = 3 # for 60 Hz
+    mains_noise_freq = 60
+    properties.update({'mains_noise':[mains_noise_freq - 1, mains_noise_freq + 1]})
     
     # init stft object
     stft_obj = Stft(properties)
 
     # get stft
-    freq_vector, pmat = stft_obj.get_stft(simple_sine(properties, frequency, ampltitude, index))
+    freq_vector, pmat = stft_obj.get_stft(mains_noise_sine(properties, mains_noise_freq))
     
     # get frequency index to find peak power
-    freq_idx = get_freq_index(freq_vector, [frequency(index)])
+    freq_idx = get_freq_index(freq_vector, [mains_noise_freq, properties['mains_noise'][0]])
     
-    # get power before noise removal
+    # get power at noise frequency before noise removal
     psd = np.mean(pmat, axis = 1)
-    power_before_noise_removal =  psd[freq_idx]
+    power_before_noise_removal =  psd[freq_idx[0]]
     
-    # remove surrounding frequency
-    # freq = [frequency(index)-2, frequency(index)+2 ]
+    # remove mains noise
     pmat = stft_obj.remove_mains(freq_vector, pmat)
     
-    # get power after noise removal
+    # get power at noise frequency after noise removal
     psd = np.mean(pmat, axis = 1)
-    power_after_noise_removal =  psd[freq_idx]    
-
-    assert power_before_noise_removal > power_after_noise_removal
+    power_after_noise_removal =  psd[freq_idx[0]]
+    
+    # get power of lower limit
+    psd = np.mean(pmat, axis = 1)
+    nearby_power =  psd[freq_idx[1]]
+    
+    # check if noise is reduced and same as lower bound
+    test = np.zeros(2, dtype = bool)
+    test[0] = power_before_noise_removal > power_after_noise_removal
+    test[1] = nearby_power == power_after_noise_removal
+    assert np.all(test)
 
 
 

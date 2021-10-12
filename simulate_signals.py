@@ -1,7 +1,6 @@
 ####----------------------- IMPORTS ------------------- ######
 import numpy as np
 from stft import get_freq_index, Stft, Properties
-from matplotlib.pyplot import plot, hist
 ####--------------------------------------------------- ######
 
 class SimSignal(Properties):
@@ -98,6 +97,7 @@ class SimSignal(Properties):
 
 
 if __name__ == '__main__':
+    from matplotlib.pyplot import plot
     properties = {'fs':4000, 'win_dur':5, 'freq_range': [5, 121], 
                 'overlap':0.5, 'mains_noise': [59, 61]}
     
@@ -112,10 +112,26 @@ if __name__ == '__main__':
     # get power
     stft_obj = Stft(properties)
     freq_vector, pmat = stft_obj.get_stft(signal)
-
+    
+    # plot original
     plot(freq_vector, np.mean(pmat, axis = 1))
-
+    
+    # remove noise
     pmat = stft_obj.remove_mains(freq_vector, pmat)
     
+    # plot noise removed PSD
     plot(freq_vector, np.mean(pmat, axis = 1))
+
+
+
+
+
+
+
+
+
+
+
+
+
 
