@@ -1,7 +1,7 @@
 ########## ------------------------------- IMPORTS ------------------------ ##########
 import numpy as np
 import pandas as pd
-from typing import Union, List
+from typing import Union#, List
 from beartype import beartype
 from scipy.signal import stft as scipy_stft
 from outlier_detection import get_outliers
@@ -78,8 +78,8 @@ def f_fill(arr:np.ndarray, axis:int = 0) -> np.ndarray:
 class Properties:
     " Convert dictionary to class properties and check types"
     
-    types = {'fs':int, 'win_dur':int, 'freq_range':list, 
-             'overlap':float, 'mains_noise':list}
+    types = {'sampling_rate':int, 'fft_win':int, 'freq_range':list, 
+             'fft_overlap':float, 'mains_noise':list}
     
     def __init__(self, properties:dict):
         # Add dictionary elements to object attributes if variable names and types match
@@ -135,10 +135,10 @@ class Stft(Properties):
 
         Parameters
         ----------
-        fs : int
-        win_dur : int
+        sampling_rate : int
+        fft_win : int
         freq_range : list
-        overlap : float, the default is 0.5.
+        fft_overlap : float, the default is 0.5.
 
         Returns
         -------
@@ -148,12 +148,12 @@ class Stft(Properties):
 
         # pass parameters to object
         super().__init__(properties)
-        self.winsize = int(self.fs * self.win_dur)              # window size (samples)  
-        self.overlap_size = int(self.winsize * self.overlap)    # overlap size (samples)
-        self.f_idx = self.get_freq_idx(self.freq_range)         # get frequency index
+        self.winsize = int(self.sampling_rate * self.fft_win)                      # window size (samples)  
+        self.fft_overlap_size = int(self.winsize * self.fft_overlap)    # fft_overlap size (samples)
+        self.f_idx = self.get_freq_idx(self.freq_range)                 # get frequency index
         
         # check that there are only two real numbers [lower, upper] limit within nyquist limit
-        check_range_input(self.freq_range, 0, self.fs/2)
+        check_range_input(self.freq_range, 0, self.sampling_rate/2)
         
         # check if mains noise is within user specified frequency range
         check_range_input(self.mains_noise, self.freq_range[0], self.freq_range[1])
@@ -175,7 +175,7 @@ class Stft(Properties):
 
         freq_idx = np.zeros(len(f), dtype = np.int32)
         for i in range(len(f)):
-            freq_idx[i] = int(f[i]*(self.winsize/self.fs))
+            freq_idx[i] = int(f[i]*(self.winsize/self.sampling_rate))
         
         return freq_idx
         
@@ -196,7 +196,7 @@ class Stft(Properties):
         """
         
         # get spectrogram
-        f, t, pmat = scipy_stft(input_wave, self.fs, nperseg=self.winsize, noverlap = self.overlap_size)
+        f, t, pmat = scipy_stft(input_wave, self.sampling_rate, nperseg=self.winsize, noverlap = self.fft_overlap_size)
         
         # get real power
         pmat = np.square(np.abs(pmat[self.f_idx[0] : self.f_idx[1]+1,:]))
@@ -289,10 +289,7 @@ class Stft(Properties):
         # remove mains nose
         pmat = self.remove_mains(freq, pmat)
         
-        # # remove outliers
-        # pmat, outliers = self.remove_outliers(pmat)
-        
-        return freq, pmat#, outliers
+        return freq, pmat
         
         
         

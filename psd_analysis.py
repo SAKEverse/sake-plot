@@ -1,11 +1,9 @@
 ########## ------------------------------- IMPORTS ------------------------ ##########
 import numpy as np
 import pandas as pd
-from stft import Stft, get_freq_index
+from stft import Stft, get_freq_index, Properties
 from get_data import AdiGet
 from tqdm import tqdm
-import matplotlib.pyplot as plt
-import seaborn as sns
 from beartype import beartype
 from typing import TypeVar
 PandasDf = TypeVar('pandas.core.frame.DataFrame')
@@ -68,17 +66,14 @@ def get_power_ratio(pmat:np.ndarray, freq_vec:np.ndarray, freqs:np.ndarray) -> n
     return powers
         
 @beartype
-def get_pmat(index_df:PandasDf, fft_duration:int = 5, overlap:float = 0.5, freq_range:list = [1, 120], 
-             f_noise = [59, 61], outlier_threshold = 8, outlier_window = 11) -> PandasDf:
+def get_pmat(index_df:PandasDf, properties:dict) -> PandasDf:
     """
     Run Stft analysis on signals retrieved using rows of index_df.
 
     Parameters
     ----------
     index_df : PandasDf
-    overlap: float, The default is 0.5.
-    fft_duration : int, The default is 5.
-    freq_range : list, The default is [1, 120].
+    properties: Dict
 
     Returns
     -------
@@ -87,23 +82,24 @@ def get_pmat(index_df:PandasDf, fft_duration:int = 5, overlap:float = 0.5, freq_
     """
 
     # create empty series dataframe
-    df = pd.DataFrame(np.empty((len(index_df), 3)), columns = ['freq', 'pmat', 'outliers'], dtype = object)
+    df = pd.DataFrame(np.empty((len(index_df), 2)), columns = ['freq', 'pmat'], dtype = object)
 
     for i in tqdm(range(len(index_df))): # iterate over dataframe
         
         # get properties
-        properties = index_df[AdiGet.input_parameters].loc[i].to_dict()
+        file_properties = index_df[AdiGet.input_parameters].loc[i].to_dict()
         
         # get signal
-        signal = AdiGet(properties).get_data_adi()
-           
-        # Init Stft object
-        stft_obj =  Stft(int(index_df['sampling_rate'][i]), fft_duration, freq_range,
-                         overlap = overlap, mains_noise = f_noise, 
-                         outlier_threshold = outlier_threshold, outlier_window = outlier_window)
+        signal = AdiGet(file_properties).get_data_adi()
+
+        # Init Stft object with required properties
+        select_properties = Properties.types.keys()
+        select_properties = list(select_properties)
+        
+        stft_obj =  Stft(properties[select_properties])
 
         # get frequency vector and power matrix 
-        df.at[i, 'freq'], df.at[i, 'pmat'], df.at[i, 'outliers'] = stft_obj.run_stft(signal)
+        df.at[i, 'freq'], df.at[i, 'pmat'] = stft_obj.run_stft(signal)
     
     return df
 
@@ -147,7 +143,7 @@ def melted_power_area(index_df:PandasDf, power_df:PandasDf, freqs:list, selected
     
     # melt dataframe for seaborn plotting
     df = pd.melt(index_df, id_vars = selected_categories, value_vars = freq_columns, var_name = 'freq', value_name = 'power_area',
-                 ignore_index=False)
+                 ignore_index = False)
     
     return df
 
@@ -250,75 +246,69 @@ def melted_psds(index_df:PandasDf, power_df:PandasDf, freq_range:list, selected_
 
     return df
 
-def plot_mean_psds(df, categories):
-    g = sns.FacetGrid(df, hue=categories[1], row=categories[0], col=categories[2], palette='plasma')
-    g.map(sns.lineplot, 'freq', 'power', ci = 'sd')
-    plt.legend()
-    plt.show()
-    
+# def plot_mean_psds(df, categories):
+#     g = sns.FacetGrid(df, hue=categories[1], row=categories[0], col=categories[2], palette='plasma')
+#     g.map(sns.lineplot, 'freq', 'power', ci = 'sd')
+#     plt.legend()
+#     plt.show() 
 
-
-# if __name__ == '__main__':
-#     x = 1
-#     import os, yaml
-#     from load_index import load_index
-#     # from facet_plot_gui import GridGraph
+if __name__ == '__main__':
+    x = 1
+    import os, yaml
+    from load_index import load_index
+    # from facet_plot_gui import GridGraph
     
-#     ### ---------------------- USER INPUT -------------------------------- ###
+    ### ---------------------- USER INPUT -------------------------------- ###
     
-#     ## define path and conditions for filtering
-#     filename = 'file_index.csv'
-#     parent_folder = r'C:\Users\panton01\Desktop\pydsp_analysis'
-#     path =  os.path.join(parent_folder, filename)
+    ## define path and conditions for filtering
+    filename = 'file_index.csv'
+    parent_folder = r'C:\Users\panton01\Desktop\pydsp_analysis'
+    path =  os.path.join(parent_folder, filename)
     
-#     ## enter filter conditions
-#     filter_conditions = {'brain_region':['bla', 'pfc'], 'treatment':['baseline','vehicle']} #
+    ## enter filter conditions
+    filter_conditions = {'brain_region':['bla', 'pfc'], 'treatment':['baseline','vehicle']} #
     
-#     ## define frequencies of interest
-#     with open('settings.yaml', 'r') as file:
-#         settings = yaml.load(file, Loader=yaml.FullLoader)
+    ## define frequencies of interest
+    with open('settings.yaml', 'r') as file:
+        settings = yaml.load(file, Loader=yaml.FullLoader)
     
-#     ### ---------------------------------------------------------------- ####
+    ### ---------------------------------------------------------------- ####
     
-#     ## load data frame
-#     index_df = load_index(path)
+    ## load data frame
+    index_df = load_index(path)
     
-#     ## save dataframe
-#     # index_df.to_csv(os.path.join(parent_folder, filename.replace('csv','pickle')))
+    ## save dataframe
+    # index_df.to_csv(os.path.join(parent_folder, filename.replace('csv','pickle')))
     
-#     # get pmat
-#         # get power 
-#     power_df = get_pmat(index_df, fft_duration = settings['fft_win'],
-#                         freq_range = settings['fft_freq_range'], 
-#                         f_noise = settings['mains_noise'],
-#                         outlier_threshold = settings['outlier_threshold']
-#                         )
+    # get pmat
+        # get power 
+    power_df = get_pmat(index_df, settings                        )
     
-#     power_df.to_pickle(os.path.join(parent_folder, 'power_mat.pickle'))
-#     # power_df = pd.read_pickle(r'C:\Users\panton01\Desktop\pydsp_analysis\power_mat.pickle')
+    # power_df.to_pickle(os.path.join(parent_folder, 'power_mat.pickle'))
+    # power_df = pd.read_pickle(r'C:\Users\panton01\Desktop\pydsp_analysis\power_mat.pickle')
     
-#     # # remove mains noise and outliers!!!!!!!!!!!!!!!!!!!!! 
-#     # df = melted_power_ratio(index_df, power_df, settings['freq_ratios'], ['sex', 'treatment', 'brain_region']) #
+    # # remove mains noise and outliers!!!!!!!!!!!!!!!!!!!!! 
+    # df = melted_power_ratio(index_df, power_df, settings['freq_ratios'], ['sex', 'treatment', 'brain_region']) #
     
-#     # import seaborn as sns
+    # import seaborn as sns
     
-#     # # get melted power area
-#     # df = melted_power_area(index_df, power_df, settings['freq_ranges'], ['sex', 'treatment', 'brain_region'])
-#     # # sns.catplot(data = df, x = 'freq', y = 'power_area', hue = 'treatment', col = 'sex', row = 'brain_region', kind = 'box')
+    # # get melted power area
+    # df = melted_power_area(index_df, power_df, settings['freq_ranges'], ['sex', 'treatment', 'brain_region'])
+    # # sns.catplot(data = df, x = 'freq', y = 'power_area', hue = 'treatment', col = 'sex', row = 'brain_region', kind = 'box')
     
-#     # # get melted psd
-#     # df = melted_psds(index_df, power_df, [1,30], ['sex', 'treatment', 'brain_region'])
-#     # df.to_csv('melted_psd.csv',index=False)
-#     # # g = sns.FacetGrid(df.iloc[::5,:], hue='treatment', row='sex', col='brain_region', palette='plasma')
-#     # # g.map(sns.lineplot, 'freq', 'power')
+    # # get melted psd
+    # df = melted_psds(index_df, power_df, [1,30], ['sex', 'treatment', 'brain_region'])
+    # df.to_csv('melted_psd.csv',index=False)
+    # # g = sns.FacetGrid(df.iloc[::5,:], hue='treatment', row='sex', col='brain_region', palette='plasma')
+    # # g.map(sns.lineplot, 'freq', 'power')
     
-#     # df.to_csv('melted_psd.csv',index=True)
-#     # path = r'C:\Users\panton01\Desktop\pydsp_analysis'
-#     # filename = 'power_area_df.csv'
-#     # df.to_csv(os.path.join(path, filename), index = False)
+    # df.to_csv('melted_psd.csv',index=True)
+    # path = r'C:\Users\panton01\Desktop\pydsp_analysis'
+    # filename = 'power_area_df.csv'
+    # df.to_csv(os.path.join(path, filename), index = False)
     
-#     # graph = GridGraph(path, filename)
-#     # graph.draw_graph('violin')
+    # graph = GridGraph(path, filename)
+    # graph.draw_graph('violin')
 
 
 

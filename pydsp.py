@@ -95,10 +95,7 @@ def stft(ctx, freq):
     index_df = load_index(ctx.obj['index_path'])
                           
     # get power 
-    power_df = get_pmat(index_df, fft_duration = ctx.obj['fft_win'],
-                        freq_range = ctx.obj['fft_freq_range'], 
-                        f_noise = ctx.obj['mains_noise'],
-                         outlier_threshold = ctx.obj['outlier_threshold'])
+    power_df = get_pmat(index_df, ctx.obj)
     
     # save index and power
     index_df.to_csv(ctx.obj['index_verified_path'], index = False)
@@ -216,9 +213,6 @@ def plot(ctx, freq):
         # Graph interactive PSD
         GridGraph(ctx.obj['search_path'],  ctx.obj['psd_mat'], psd_data).draw_psd()
         
-    
-    
-
 # Execute if module runs as main program
 if __name__ == '__main__': 
     

@@ -14,7 +14,7 @@ class SimSignal(Properties):
         self.time_duration = time_duration
         
         # create time vector
-        self.t = np.arange(0, self.time_duration, 1/self.fs);
+        self.t = np.arange(0, self.time_duration, 1/self.sampling_rate);
     
     def make_sine(self, freq:float, amp:float):
         return np.sin(freq*self.t*np.pi*2) * amp
@@ -36,7 +36,7 @@ class SimSignal(Properties):
         """
 
         # create template wave
-        template = np.sin(freq*self.t[0:int(np.ceil(self.fs/freq))+1]*np.pi*2)
+        template = np.sin(freq*self.t[0:int(np.ceil(self.sampling_rate/freq))+1]*np.pi*2)
 
         # create normaly distributed events
         mu = 1/freq
@@ -98,8 +98,8 @@ class SimSignal(Properties):
 
 if __name__ == '__main__':
     from matplotlib.pyplot import plot
-    properties = {'fs':4000, 'win_dur':5, 'freq_range': [5, 121], 
-                'overlap':0.5, 'mains_noise': [59, 61]}
+    properties = {'sampling_rate':4000, 'fft_win':5, 'freq_range': [5, 121], 
+                'fft_overlap':0.5, 'mains_noise': [59, 61]}
     
     freq = [10, 60]
     amp = [5, 10]

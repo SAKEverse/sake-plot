@@ -19,12 +19,13 @@ class AdiGet:
     block, int: block number
     start_time, int: start time in samples for file read
     stop_time, int:  stop time in samples for file read
+    sampling_rate, int: sample frequency in seconds
     -----------------------------------------------------
      
     """
     
     # input parameter names required
-    input_parameters = ['folder_path', 'file_name', 'channel_id', 'block', 'start_time', 'stop_time']
+    input_parameters = ['folder_path', 'file_name', 'channel_id', 'block','sampling_rate', 'start_time', 'stop_time']
     
     @beartype
     def __init__(self, propeties:dict):
