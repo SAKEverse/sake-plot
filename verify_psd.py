@@ -1,7 +1,45 @@
 ### ---------------------- IMPORTS ---------------------- ###
 import numpy as np
 import matplotlib.pyplot as plt
+from stft import f_fill
+from outlier_detection import get_outliers
 ### ----------------------------------------------------- ###
+
+
+def remove_outliers(pmat:np.ndarray, outlier_window, outlier_threshold):
+    """
+    Remove outliers based on MAD
+
+    Parameters
+    ----------
+    pmat : np.ndarray
+
+    Returns
+    -------
+    pmat : np.ndarray
+    outliers : np.ndarray
+
+    """
+    # get outliers
+    outliers = get_outliers(np.mean(pmat, axis=0), outlier_window, outlier_threshold)
+
+    # eplace outliers with nans
+    pmat[:, outliers] = np.nan
+    
+    # interpolate missing data
+    pmat = f_fill(pmat, axis=1)
+    
+    # fill with median value
+    # find row (freq) median value
+    row_med = np.nanmedian(pmat, axis=1)
+
+    # find indices that you need to replace
+    inds = np.where(np.isnan(pmat))
+    
+    # place row medians in the indices.
+    pmat[inds] = np.take(row_med, inds[0])
+    
+    return pmat, outliers
 
 class matplotGui:
     """
@@ -110,14 +148,14 @@ class matplotGui:
         sem = np.std(self.power_df['pmat'][self.i], axis = 1) / np.sqrt(self.power_df['pmat'][self.i].shape[1])
         time_plot = np.mean(self.power_df['pmat'][self.i], axis = 0)
         
-        # plot time
-        t = np.arange(0,time_plot.shape[0],1)
-        self.axs[0].plot(t ,time_plot, color='black', linewidth=1.5, alpha=0.9, label = self.index_df.index[self.i])
-        # from outlier_detection import get_outliers
-        # outliers = get_outliers(time_plot, 60, 7)
+        # get time
+        t = np.arange(0, time_plot.shape[0], 1)
+        
+        self.axs[0].plot(t ,time_plot, marker = 'x', color='black', linewidth=1.5, alpha=0.9, label = self.index_df.index[self.i])
+        pmat, outliers = remove_outliers(self.power_df['pmat'][self.i])
+
         
         # show outliers
-        outliers = self.power_df['outliers'][self.i]
         self.axs[0].plot(t[outliers], time_plot[outliers], color='orange', linestyle='', marker='x')
         self.axs[0].set_facecolor(self.index_df['facearray'][self.i]);
         self.axs[0].legend(loc = 'upper right')
@@ -209,47 +247,47 @@ class matplotGui:
             self.save_idx() # save file to csv
             
             
-# if __name__ == '__main__':
-#     import yaml,os
-#     import pandas as pd
-#     from load_index import load_index
-#     from matplotlib.widgets import Button, SpanSelector, TextBox
-#         # define path and conditions for filtering
-#     filename = 'file_index.csv'
-#     parent_folder = r'C:\Users\panton01\Desktop\pydsp_analysis'
-#     path =  os.path.join(parent_folder, filename)
+if __name__ == '__main__':
+    import yaml,os
+    import pandas as pd
+    from load_index import load_index
+    from matplotlib.widgets import Button, SpanSelector, TextBox
+        # define path and conditions for filtering
+    filename = 'index.csv'
+    parent_folder = r'C:\Users\panton01\Desktop\pydsp_analysis'
+    path =  os.path.join(parent_folder, filename)
     
-#     # enter filter conditions
-#     filter_conditions = {'brain_region':['bla', 'pfc'], 'treatment':['baseline','vehicle']} #
+    # enter filter conditions
+    filter_conditions = {'brain_region':['bla', 'pfc'], 'treatment':['baseline','vehicle']} #
     
-#     # define frequencies of interest
-#     with open('settings.yaml', 'r') as file:
-#         settings = yaml.load(file, Loader=yaml.FullLoader)
+    # define frequencies of interest
+    with open('settings.yaml', 'r') as file:
+        settings = yaml.load(file, Loader=yaml.FullLoader)
     
-#     #### ---------------------------------------------------------------- ####
+    #### ---------------------------------------------------------------- ####
     
-#     # load index and power dataframe
-#     index_df = load_index(path)
-#     power_df = pd.read_pickle(r'C:\Users\panton01\Desktop\pydsp_analysis\power_mat.pickle')
+    # load index and power dataframe
+    index_df = load_index(path)
+    power_df = pd.read_pickle(r'C:\Users\panton01\Desktop\pydsp_analysis\power_mat.pickle')
        
-#     # init gui object
-#     callback = matplotGui(settings, index_df, power_df)
-#     plt.subplots_adjust(bottom=0.15) # create space for buttons
+    # init gui object
+    callback = matplotGui(settings, index_df, power_df)
+    plt.subplots_adjust(bottom=0.15) # create space for buttons
     
-#     # add title and labels
-#     callback.fig.suptitle('Select PSDs', fontsize=12)        # title
-#     # callback.fig.text(0.5, 0.09,'Frequency (Hz)', ha="center")                                          # xlabel
-#     # callback.fig.text(.02, .5, 'Power (V^2/Hz)', ha='center', va='center', rotation='vertical')         # ylabel
-#     callback.fig.text(0.9, 0.04,'**** KEY: Previous = <-, Next = ->, Accept = y, Reject = n, Accept all = a, Reject all = r ****' ,      # move/accept labels
-#                       ha="right", bbox=dict(boxstyle="square", ec=(1., 1., 1.), fc=(0.9, 0.9, 0.9),))              
+    # add title and labels
+    callback.fig.suptitle('Select PSDs', fontsize=12)        # title
+    # callback.fig.text(0.5, 0.09,'Frequency (Hz)', ha="center")                                          # xlabel
+    # callback.fig.text(.02, .5, 'Power (V^2/Hz)', ha='center', va='center', rotation='vertical')         # ylabel
+    callback.fig.text(0.9, 0.04,'**** KEY: Previous = <-, Next = ->, Accept = y, Reject = n, Accept all = a, Reject all = r ****' ,      # move/accept labels
+                      ha="right", bbox=dict(boxstyle="square", ec=(1., 1., 1.), fc=(0.9, 0.9, 0.9),))              
                                                     
-#     # add key press
-#     idx_out = callback.fig.canvas.mpl_connect('key_press_event', callback.keypress)
+    # add key press
+    idx_out = callback.fig.canvas.mpl_connect('key_press_event', callback.keypress)
     
-#     # set useblit True on gtkagg for enhanced performance
-#     # span = SpanSelector(callback.axs, callback.keypress, 'horizontal', useblit=True,
-#     #     rectprops=dict(alpha=0.5, facecolor='red'))
-#     # plt.show()
+    # set useblit True on gtkagg for enhanced performance
+    # span = SpanSelector(callback.axs, callback.keypress, 'horizontal', useblit=True,
+    #     rectprops=dict(alpha=0.5, facecolor='red'))
+    # plt.show()
 
 
 

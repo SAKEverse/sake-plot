@@ -4,7 +4,6 @@ import pandas as pd
 from typing import Union#, List
 from beartype import beartype
 from scipy.signal import stft as scipy_stft
-from outlier_detection import get_outliers
 ########## ---------------------------------------------------------------- ##########
 
 
@@ -230,42 +229,6 @@ class Stft(Properties):
 
         return pmat
     
-    @beartype
-    def remove_outliers(self, pmat:np.ndarray):
-        """
-        Remove outliers based on MAD
-
-        Parameters
-        ----------
-        pmat : np.ndarray
-
-        Returns
-        -------
-        pmat : np.ndarray
-        outliers : np.ndarray
-
-        """
-        # get outliers
-        outliers = get_outliers(np.mean(pmat, axis=0), self.outlier_window, self.outlier_threshold)
-
-        # eplace outliers with nans
-        pmat[:, outliers] = np.nan
-        
-        # interpolate missing data
-        pmat = f_fill(pmat, axis=1)
-        
-        # fill with median value
-        # find row (freq) median value
-        row_med = np.nanmedian(pmat, axis=1)
-
-        # find indices that you need to replace
-        inds = np.where(np.isnan(pmat))
-        
-        # place row medians in the indices.
-        pmat[inds] = np.take(row_med, inds[0])
-        
-        return pmat, outliers
-
     @beartype
     def run_stft(self, input_wave:np.ndarray):
         """
