@@ -46,7 +46,7 @@ def get_power_ratio(pmat:np.ndarray, freq_vec:np.ndarray, freqs:np.ndarray) -> n
     ----------
     pmat : np.ndarray, 2D array containing power values rows = frequency bins and cols = time bins
     freq_vec : np.ndarray, vector with real frequency values
-    freqs : np.ndarray, 3D array with frequencies, 1d = frequency ratios, 2d [lower to upper freq range],3d = [start, stop]
+    freqs : np.ndarray, 3D array with frequencies, 1d = frequency ratios, 2d [lower to upper freq range], 3d = [start, stop]
 
     Returns
     -------
@@ -91,14 +91,19 @@ def get_pmat(index_df:PandasDf, properties:dict) -> PandasDf:
         
         # get signal
         signal = AdiGet(file_properties).get_data_adi()
-
-        # Init Stft object with required properties
-        select_properties = Properties.types.keys()
-        select_properties = list(select_properties)
         
-        stft_obj =  Stft(properties[select_properties])
-
-        # get frequency vector and power matrix 
+        # add sampling rate
+        properties.update({'sampling_rate':int(file_properties['sampling_rate'])})
+        
+        # Init Stft object with required properties
+        selected_keys = Properties.types.keys()
+        selected_keys = list(selected_keys)
+        
+        # select key-value pairs from dictionary
+        selected_properties = {x: properties[x] for x in selected_keys}
+        
+        # convert time series to frequency domain
+        stft_obj =  Stft(selected_properties)
         df.at[i, 'freq'], df.at[i, 'pmat'] = stft_obj.run_stft(signal)
     
     return df

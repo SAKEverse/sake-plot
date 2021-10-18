@@ -78,7 +78,7 @@ def f_fill(arr:np.ndarray, axis:int = 0) -> np.ndarray:
 class Properties:
     " Convert dictionary to class properties and check types"
     
-    types = {'sampling_rate':int, 'fft_win':int, 'freq_range':list, 
+    types = {'sampling_rate':int, 'fft_win':int, 'fft_freq_range':list, 
              'fft_overlap':float, 'mains_noise':list}
     
     def __init__(self, properties:dict):
@@ -137,7 +137,7 @@ class Stft(Properties):
         ----------
         sampling_rate : int
         fft_win : int
-        freq_range : list
+        fft_freq_range : list
         fft_overlap : float, the default is 0.5.
 
         Returns
@@ -150,13 +150,13 @@ class Stft(Properties):
         super().__init__(properties)
         self.winsize = int(self.sampling_rate * self.fft_win)                      # window size (samples)  
         self.fft_overlap_size = int(self.winsize * self.fft_overlap)    # fft_overlap size (samples)
-        self.f_idx = self.get_freq_idx(self.freq_range)                 # get frequency index
+        self.f_idx = self.get_freq_idx(self.fft_freq_range)                 # get frequency index
         
         # check that there are only two real numbers [lower, upper] limit within nyquist limit
-        check_range_input(self.freq_range, 0, self.sampling_rate/2)
+        check_range_input(self.fft_freq_range, 0, self.sampling_rate/2)
         
         # check if mains noise is within user specified frequency range
-        check_range_input(self.mains_noise, self.freq_range[0], self.freq_range[1])
+        check_range_input(self.mains_noise, self.fft_freq_range[0], self.fft_freq_range[1])
     
     @beartype
     def get_freq_idx(self, f:list) -> np.ndarray:

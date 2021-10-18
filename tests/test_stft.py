@@ -8,7 +8,7 @@ time_duration = 30 # for signal duration (in seconds)
 ####----------------------- Fixtures ------------------- ######
 @pytest.fixture
 def properties():
-    prop = {'sampling_rate':4000, 'fft_win':5, 'freq_range': [5, 121], 
+    prop = {'sampling_rate':4000, 'fft_win':5, 'fft_freq_range': [5, 121], 
             'fft_overlap':0.5, 'mains_noise': [58, 62]}
     return prop
 

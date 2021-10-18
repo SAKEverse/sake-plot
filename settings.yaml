@@ -3,7 +3,7 @@ fft_freq_range:
 - 150
 fft_overlap: 0.5
 fft_win: 5
-file_index: file_index.csv
+file_index: index.csv
 file_index_verified: file_index_verified.csv
 file_power_mat: power_mat.pickle
 file_power_mat_verified: power_mat_verified.pickle
