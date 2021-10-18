@@ -80,6 +80,10 @@ def get_pmat(index_df:PandasDf, properties:dict) -> PandasDf:
     PandasDf, with power matrix and frequency
 
     """
+    
+    # drop rows containing NaNs
+    index_df = index_df.dropna().reset_index()
+    index_df = index_df.drop(['index'], axis = 1)
 
     # create empty series dataframe
     df = pd.DataFrame(np.empty((len(index_df), 2)), columns = ['freq', 'pmat'], dtype = object)
@@ -266,7 +270,7 @@ if __name__ == '__main__':
     ### ---------------------- USER INPUT -------------------------------- ###
     
     ## define path and conditions for filtering
-    filename = 'file_index.csv'
+    filename = 'index.csv'
     parent_folder = r'C:\Users\panton01\Desktop\pydsp_analysis'
     path =  os.path.join(parent_folder, filename)
     
