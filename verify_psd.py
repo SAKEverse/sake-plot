@@ -67,7 +67,7 @@ class matplotGui:
         # get background
         self.index_df['facearray'] = 'w'
         
-        # create figure and axis
+        # # create figure and axis
         self.fig, self.axs = plt.subplots(2, 1, sharex = False, figsize=(8,8))
 
         # remove top and right axis
@@ -78,6 +78,7 @@ class matplotGui:
             
         # create first plot
         self.plot_data()
+        plt.show()
         
     def get_index(self):
         """
@@ -150,8 +151,16 @@ class matplotGui:
         self.axs[1].legend(['Outlier_threshold = {:.1f}'.format(self.outlier_threshold)], loc = 'upper right')
         self.axs[1].set_xlabel('Frequency (Hz)')
         self.axs[1].set_ylabel('Power (V^2/Hz)')
+        plt.subplots_adjust(bottom=0.15)
+        self.fig.suptitle('Select PSDs', fontsize=12)   
+        self.fig.text(0.9, 0.04, '**** KEY: Previous = <-, Next = ->, Accept = y, Reject = n, Accept all = a, Reject all = r ****' ,      # move/accept labels
+                      ha="right", bbox=dict(boxstyle="square", ec=(1., 1., 1.), fc=(0.9, 0.9, 0.9),))
+        
 
-        self.fig.canvas.draw() # draw
+        self.fig.canvas.callbacks.connect('key_press_event', self.keypress)
+        plt.draw()
+        
+        
 
             
     def save_idx(self):
@@ -191,6 +200,7 @@ class matplotGui:
          
     ## ------  Keyboard press ------ ##     
     def keypress(self, event):
+        # print(event.key)
         if event.key == 'right':
             self.ind += 1 # add one to class index
             self.plot_data() # plot
