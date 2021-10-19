@@ -180,7 +180,18 @@ def plot(ctx, freq, plot_type):
                     "Need to run 'stft' before plotting.\n", fg = 'yellow', bold = True)
         return
     
-    # if plot_type is Noset(['power_area', 'power_ratio', 'psd'])
+    # check if plot type is present in the correct format
+    plot_type_options = ['power_area', 'power_ratio', 'psd']
+    
+    if plot_type is None:
+        click.secho("\n -> 'Missing argument 'plot_type'. Please use the following format: --plot_type power_area.\n"
+                    , fg = 'yellow', bold = True)
+        return
+    
+    if plot_type not in plot_type_options:
+        click.secho(f"\n -> Got'{plot_type}' instead of {plot_type_options}\n",
+                    fg = 'yellow', bold = True)
+        return
         
     # load index and power mat
     index_df = pd.read_csv(ctx.obj['index_verified_path'])
@@ -207,17 +218,18 @@ def plot(ctx, freq, plot_type):
         GridGraph(ctx.obj['search_path'], ctx.obj['power_mat_verified_path'], data).draw_graph(ctx.obj['summary_plot_type'])
         return
     
-    # get frequency
-    if freq is not None:
-        freq_range = [int(i) for i in freq.split('-')]
-        if len(freq_range) !=2:
-              click.secho(f"\n -> '{freq}' could not be parsed. Please use the following format: 1-30.\n", fg = 'yellow', bold = True)
-              return
-    else:
-        click.secho("\n -> 'Missing argument 'freq'. Please use the following format: --freq 1-30.\n", fg = 'yellow', bold = True)
-        return
-    
     if plot_type == 'psd':
+        
+        # get frequency
+        if freq is not None:
+            freq_range = [int(i) for i in freq.split('-')]
+            if len(freq_range) !=2:
+                  click.secho(f"\n -> '{freq}' could not be parsed. Please use the following format: 1-30.\n", fg = 'yellow', bold = True)
+                  return
+        else:
+            click.secho("\n -> 'Missing argument 'freq'. Please use the following format: --freq 1-30.\n", fg = 'yellow', bold = True)
+            return
+    
         # get psd data
         psd_data = melted_psds(index_df, power_df, freq_range, categories)
         
