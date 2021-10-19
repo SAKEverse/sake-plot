@@ -188,7 +188,7 @@ class matplotGui:
         
         # remove outliers
         for i in tqdm(range(len(self.power_df))):
-            self.power_df['pmat'][i], outliers = remove_outliers(self.power_df['pmat'][i], self.outlier_window, self.outlier_threshold)
+            self.power_df.at[i, 'pmat'], _ = remove_outliers(self.power_df['pmat'][i], self.outlier_window, self.outlier_threshold)
         
         # save verified index and power_df file
         self.index_df.to_csv(self.index_verified_path, index = False)
