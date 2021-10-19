@@ -118,11 +118,8 @@ def verify(ctx, outlier_threshold):
         click.secho(f"\n -> File '{ctx.obj['file_power_mat']}' was not found in '{ctx.obj['search_path']}'.\n", fg = 'yellow', bold = True)
         return
     
-    # pass threshold to properties dictionary
-    if outlier_threshold is None:
-        click.secho("\n -> 'Missing argument 'outlier_threshold'. Please use the following format: --outlier_threshold 4.2.\n", fg = 'yellow', bold = True)
-        return
-    else:    
+    # update outlier if present
+    if outlier_threshold is not None:
         ctx.obj.update({'outlier_threshold': float(outlier_threshold)})
     
     # load files
@@ -148,11 +145,8 @@ def verifyr(ctx, outlier_threshold):
         click.secho(f"\n -> File '{ctx.obj['file_power_mat_verified']}' was not found in '{ctx.obj['search_path']}'.\n", fg = 'yellow', bold = True)
         return
     
-    # pass threshold to properties dictionary
-    if outlier_threshold is None:
-        click.secho("\n -> 'Missing argument 'outlier_threshold'. Please use the following format: --outlier_threshold 4.2.\n", fg = 'yellow', bold = True)
-        return
-    else:    
+    # update outlier if present
+    if outlier_threshold is not None:
         ctx.obj.update({'outlier_threshold': float(outlier_threshold)})
     
     # load files
@@ -167,9 +161,14 @@ def verifyr(ctx, outlier_threshold):
 @main.command()
 @click.option('--plot_type', type = str, help = 'Enter plot type, e.g. psd')
 @click.option('--freq', type = str, help = 'Enter frequency range, e.g. 1-30')
+@click.option('--kind', type = str, help = 'Enter graph kind, e.g. violin')
 @click.pass_context
-def plot(ctx, freq, plot_type):
+def plot(ctx, freq, plot_type, kind):
     """Enter plot menu"""
+    
+    # update kind if present
+    if kind is not None:
+        ctx.obj.update({'summary_plot_type':kind})
     
     from psd_analysis import melted_power_area, melted_power_ratio, melted_psds
     from facet_plot_gui import GridGraph

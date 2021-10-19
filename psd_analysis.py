@@ -187,7 +187,7 @@ def melted_power_ratio(index_df:PandasDf, power_df:PandasDf, freqs:list, selecte
         
             # get power across frequencies
             power_array[i,:] = get_power_ratio(power_df['pmat'][i], power_df['freq'][i], freqs)
-        
+            
     # concatenate to array
     index_df = pd.concat([index_df, pd.DataFrame(data = power_array, columns = freq_columns)], axis=1)
     
@@ -256,11 +256,6 @@ def melted_psds(index_df:PandasDf, power_df:PandasDf, freq_range:list, selected_
 
     return df
 
-# def plot_mean_psds(df, categories):
-#     g = sns.FacetGrid(df, hue=categories[1], row=categories[0], col=categories[2], palette='plasma')
-#     g.map(sns.lineplot, 'freq', 'power', ci = 'sd')
-#     plt.legend()
-#     plt.show() 
 
 if __name__ == '__main__':
     x = 1

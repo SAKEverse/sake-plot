@@ -25,22 +25,20 @@ def remove_outliers(pmat:np.ndarray, outlier_window, outlier_threshold):
     outliers = get_outliers(np.mean(pmat, axis=0), outlier_window, outlier_threshold)
 
     # replace outliers with nans
-    # pmat[:, outliers] = np.nan
+    pmat[:, outliers] = np.nan
     
     # interpolate missing data
-    # pmat = f_fill(pmat, axis=1)
+    pmat = f_fill(pmat, axis=1)
     
-    # pmat[np.isnan(pmat)] = 0
     # fill with median value
-    # row_med = np.nanmedian(pmat, axis=1)
-
-    # # find indices that you need to replace
-    # inds = np.where(np.isnan(pmat))
-    # pmat[inds] = np.nanmedian(pmat)
-    # breakpoint()
+    row_med = np.nanmedian(pmat, axis=1)
     
-    # # place row medians in the indices.
-    # pmat[inds] = np.take(row_med, inds[0])
+    # find indices that you need to replace
+    inds = np.where(np.isnan(pmat))
+    pmat[inds] = np.nanmedian(pmat)
+    
+    # place row medians in the indices.
+    pmat[inds] = np.take(row_med, inds[0])
     
     return pmat, outliers
 
@@ -83,6 +81,7 @@ class matplotGui:
         self.plot_data()
         plt.show()
         
+        
     def get_index(self):
         """
 
@@ -101,8 +100,7 @@ class matplotGui:
         # set counter to internal counter
         self.i = self.ind
 
-        
-        
+
     def plot_data(self, **kwargs):
         """
         Plot power area time plot and PSD for outlier and experiment verification
@@ -162,8 +160,6 @@ class matplotGui:
 
         self.fig.canvas.callbacks.connect('key_press_event', self.keypress)
         plt.draw()
-        
-        
 
             
     def save_idx(self):
@@ -192,7 +188,7 @@ class matplotGui:
         
         # remove outliers
         for i in tqdm(range(len(self.power_df))):
-            pmat, outliers = remove_outliers(self.power_df['pmat'][i], self.outlier_window, self.outlier_threshold)
+            self.power_df['pmat'][i], outliers = remove_outliers(self.power_df['pmat'][i], self.outlier_window, self.outlier_threshold)
         
         # save verified index and power_df file
         self.index_df.to_csv(self.index_verified_path, index = False)
@@ -203,7 +199,7 @@ class matplotGui:
          
     ## ------  Keyboard press ------ ##     
     def keypress(self, event):
-        # print(event.key)
+
         if event.key == 'right':
             self.ind += 1 # add one to class index
             self.plot_data() # plot
@@ -309,20 +305,8 @@ if __name__ == '__main__':
     index_df = load_index(path)
     power_df = pd.read_pickle(r'C:\Users\panton01\Desktop\pydsp_analysis\power_mat.pickle')
        
-    
-    pmat, outliers = remove_outliers(power_df['pmat'][0], 11, 5)
-    # # init gui object
-    # callback = matplotGui(settings, index_df, power_df)
-    # plt.subplots_adjust(bottom=0.15) # create space for buttons
-    
-    # # add title and labels
-    # callback.fig.suptitle('Select PSDs', fontsize=12)        # title
-    # callback.fig.text(0.9, 0.04,'**** KEY: Previous = <-, Next = ->, Accept = y, Reject = n, Accept all = a, Reject all = r ****' ,      # move/accept labels
-    #                   ha="right", bbox=dict(boxstyle="square", ec=(1., 1., 1.), fc=(0.9, 0.9, 0.9),))              
-                                                    
-    # # add key press
-    # idx_out = callback.fig.canvas.mpl_connect('key_press_event', callback.keypress)
-
+    # pmat, outliers = remove_outliers(power_df['pmat'][0], 11, 5)
+    callback = matplotGui(settings, index_df, power_df)
 
 
 
