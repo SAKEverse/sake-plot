@@ -23,14 +23,13 @@ def remove_outliers(pmat:np.ndarray, outlier_window, outlier_threshold):
     # get outliers
     outliers = get_outliers(np.mean(pmat, axis=0), outlier_window, outlier_threshold)
 
-    # eplace outliers with nans
+    # replace outliers with nans
     pmat[:, outliers] = np.nan
     
     # interpolate missing data
     pmat = f_fill(pmat, axis=1)
     
     # fill with median value
-    # find row (freq) median value
     row_med = np.nanmedian(pmat, axis=1)
 
     # find indices that you need to replace
@@ -55,7 +54,7 @@ class matplotGui:
                setattr(self, key, value)
                
         # wait time after plot
-        self.wait_time = 0.2 # in seconds
+        self.wait_time = 0.1 # in seconds
 
         # pass object attributes to class
         self.power_df = power_df                      
@@ -78,37 +77,6 @@ class matplotGui:
             
         # create first plot
         self.plot_data()
-    
-    def save_idx(self):
-        """
-        Saves accepted PSD index and mat files
-        Returns
-        -------
-        None.
-        """
-
-        # check if all PSDs were verified
-        if np.any(self.index_df['accepted'] == -1) == True:
-            print('\n****** Some PSDs were not verified ******\n')
-            
-        # get accepted PSDs
-        accepted_idx = self.index_df['accepted'] == 1
-        self.index_df = self.index_df[accepted_idx]
-        self.power_df = self.power_df[accepted_idx]
-        
-        # drop extra columns
-        self.index_df = self.index_df.drop(columns = ['accepted','facearray'])
-        
-        # reset index
-        self.index_df.reset_index(drop = True, inplace = True)
-        self.power_df.reset_index(drop = True, inplace = True)
-        
-        # save verified index and power_df file
-        self.index_df.to_csv(self.index_verified_path, index = False)
-        self.power_df.to_pickle(self.power_mat_verified_path)
-
-        print(f"Verified PSDs were saved in '{self.search_path}'.\n")    
-        
         
     def get_index(self):
         """
@@ -117,7 +85,7 @@ class matplotGui:
         -------
         None.
         """
-        
+
         # reset counter when limits are exceeded
         if self.ind >= len(self.index_df):
             self.ind = 0 
@@ -132,8 +100,7 @@ class matplotGui:
         
     def plot_data(self, **kwargs):
         """
-        plot_data(self)
-        plot self y and t and mark seizure
+        Plot power area time plot and PSD for outlier and experiment verification
         """
         
         # get index
@@ -185,6 +152,41 @@ class matplotGui:
 
         self.fig.canvas.draw() # draw
 
+            
+    def save_idx(self):
+        """
+        Saves accepted PSD index and mat files
+        Returns
+        -------
+        None.
+        """
+
+        # check if all PSDs were verified
+        if np.any(self.index_df['accepted'] == -1) == True:
+            print('\n****** Some PSDs were not verified ******\n')
+            
+        # get accepted PSDs
+        accepted_idx = self.index_df['accepted'] == 1
+        self.index_df = self.index_df[accepted_idx]
+        self.power_df = self.power_df[accepted_idx]
+        
+        # drop extra columns
+        self.index_df = self.index_df.drop(columns = ['accepted','facearray'])
+        
+        # reset index
+        self.index_df.reset_index(drop = True, inplace = True)
+        self.power_df.reset_index(drop = True, inplace = True)
+        
+        # remove outliers
+        for i in range(len(self.power_df)):
+            pmat, outliers = remove_outliers(self.power_df['pmat'][i], self.outlier_window, self.outlier_threshold)
+        
+        # save verified index and power_df file
+        self.index_df.to_csv(self.index_verified_path, index = False)
+        self.power_df.to_pickle(self.power_mat_verified_path)
+
+        print(f"Verified PSDs were saved in '{self.search_path}'.\n")  
+        
          
     ## ------  Keyboard press ------ ##     
     def keypress(self, event):
@@ -273,7 +275,6 @@ if __name__ == '__main__':
     import yaml,os
     import pandas as pd
     from load_index import load_index
-    from matplotlib.widgets import Button, SpanSelector, TextBox
         # define path and conditions for filtering
     filename = 'index.csv'
     parent_folder = r'C:\Users\panton01\Desktop\pydsp_analysis'
@@ -294,26 +295,19 @@ if __name__ == '__main__':
     index_df = load_index(path)
     power_df = pd.read_pickle(r'C:\Users\panton01\Desktop\pydsp_analysis\power_mat.pickle')
        
-    # init gui object
-    callback = matplotGui(settings, index_df, power_df)
-    plt.subplots_adjust(bottom=0.15) # create space for buttons
     
-    # add title and labels
-    callback.fig.suptitle('Select PSDs', fontsize=12)        # title
-    # callback.fig.text(0.5, 0.09,'Frequency (Hz)', ha="center")                                          # xlabel
-    # callback.fig.text(.02, .5, 'Power (V^2/Hz)', ha='center', va='center', rotation='vertical')         # ylabel
-    callback.fig.text(0.9, 0.04,'**** KEY: Previous = <-, Next = ->, Accept = y, Reject = n, Accept all = a, Reject all = r ****' ,      # move/accept labels
-                      ha="right", bbox=dict(boxstyle="square", ec=(1., 1., 1.), fc=(0.9, 0.9, 0.9),))              
+    pmat, outliers = remove_outliers(power_df['pmat'][0], 11, 5)
+    # # init gui object
+    # callback = matplotGui(settings, index_df, power_df)
+    # plt.subplots_adjust(bottom=0.15) # create space for buttons
+    
+    # # add title and labels
+    # callback.fig.suptitle('Select PSDs', fontsize=12)        # title
+    # callback.fig.text(0.9, 0.04,'**** KEY: Previous = <-, Next = ->, Accept = y, Reject = n, Accept all = a, Reject all = r ****' ,      # move/accept labels
+    #                   ha="right", bbox=dict(boxstyle="square", ec=(1., 1., 1.), fc=(0.9, 0.9, 0.9),))              
                                                     
-    # add key press
-    idx_out = callback.fig.canvas.mpl_connect('key_press_event', callback.keypress)
-    
-    # set useblit True on gtkagg for enhanced performance
-    # span = SpanSelector(callback.axs, callback.keypress, 'horizontal', useblit=True,
-    #     rectprops=dict(alpha=0.5, facecolor='red'))
-    # plt.show()
-
-
+    # # add key press
+    # idx_out = callback.fig.canvas.mpl_connect('key_press_event', callback.keypress)
 
 
 

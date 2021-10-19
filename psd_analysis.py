@@ -66,18 +66,19 @@ def get_power_ratio(pmat:np.ndarray, freq_vec:np.ndarray, freqs:np.ndarray) -> n
     return powers
         
 @beartype
-def get_pmat(index_df:PandasDf, properties:dict) -> PandasDf:
+def get_pmat(index_df:PandasDf, properties:dict) -> tuple((PandasDf, PandasDf)):
     """
     Run Stft analysis on signals retrieved using rows of index_df.
 
     Parameters
     ----------
-    index_df : PandasDf
+    index_df : PandasDf, experiment index
     properties: Dict
 
     Returns
     -------
-    PandasDf, with power matrix and frequency
+    index_df: PandasDf, experiment index
+    power_df: PandasDf, with power matrix and frequency
 
     """
     
@@ -107,10 +108,10 @@ def get_pmat(index_df:PandasDf, properties:dict) -> PandasDf:
         selected_properties = {x: properties[x] for x in selected_keys}
         
         # convert time series to frequency domain
-        stft_obj =  Stft(selected_properties)
+        stft_obj = Stft(selected_properties)
         df.at[i, 'freq'], df.at[i, 'pmat'] = stft_obj.run_stft(signal)
     
-    return df
+    return index_df, df
 
 
 def melted_power_area(index_df:PandasDf, power_df:PandasDf, freqs:list, selected_categories:list):
@@ -291,7 +292,7 @@ if __name__ == '__main__':
     
     # get pmat
         # get power 
-    power_df = get_pmat(index_df, settings                        )
+    power_df = get_pmat(index_df, settings)
     
     # power_df.to_pickle(os.path.join(parent_folder, 'power_mat.pickle'))
     # power_df = pd.read_pickle(r'C:\Users\panton01\Desktop\pydsp_analysis\power_mat.pickle')
