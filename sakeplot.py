@@ -10,6 +10,8 @@ from PyQt5 import QtCore, QtWidgets, QtTest
 from PyQt5.QtGui import QPixmap
 import yaml
 import subprocess
+import webbrowser
+
 
 
 app = QtWidgets.QApplication(sys.argv)
@@ -100,6 +102,11 @@ def reverify():
     
     
 ui.reverifyButton.clicked.connect(lambda:reverify())
+
+def openSettings():
+    webbrowser.open(os.path.join(script_dir,r"settings.yaml"))
+    
+ui.actionSettings.triggered.connect(lambda:openSettings())
 
 # Execute if module runs as main program
 if __name__ == '__main__': 
