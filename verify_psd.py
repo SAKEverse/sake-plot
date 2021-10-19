@@ -25,19 +25,22 @@ def remove_outliers(pmat:np.ndarray, outlier_window, outlier_threshold):
     outliers = get_outliers(np.mean(pmat, axis=0), outlier_window, outlier_threshold)
 
     # replace outliers with nans
-    pmat[:, outliers] = np.nan
+    # pmat[:, outliers] = np.nan
     
     # interpolate missing data
-    pmat = f_fill(pmat, axis=1)
+    # pmat = f_fill(pmat, axis=1)
     
+    # pmat[np.isnan(pmat)] = 0
     # fill with median value
-    row_med = np.nanmedian(pmat, axis=1)
+    # row_med = np.nanmedian(pmat, axis=1)
 
-    # find indices that you need to replace
-    inds = np.where(np.isnan(pmat))
+    # # find indices that you need to replace
+    # inds = np.where(np.isnan(pmat))
+    # pmat[inds] = np.nanmedian(pmat)
+    # breakpoint()
     
-    # place row medians in the indices.
-    pmat[inds] = np.take(row_med, inds[0])
+    # # place row medians in the indices.
+    # pmat[inds] = np.take(row_med, inds[0])
     
     return pmat, outliers
 

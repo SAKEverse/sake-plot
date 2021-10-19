@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Aug 11 13:10:37 2021
-
-@author: panton01
-"""
-
 ########## ------------------------------- IMPORTS ------------------------ ##########
 import os, yaml, click
 import pandas as pd
@@ -38,6 +30,7 @@ def main(ctx):
     # set files present to zero
     ctx.obj.update({'index_present': 0})
     ctx.obj.update({'power_present': 0})
+    ctx.obj.update({'power_verified_present':0})
     
     # get path to files
     ctx.obj.update({'index_path': os.path.join(ctx.obj['search_path'], ctx.obj['file_index'])})
@@ -52,6 +45,10 @@ def main(ctx):
     # check if power mat file is present and get full path
     if os.path.isfile(ctx.obj['power_mat_path']):
         ctx.obj.update({'power_present':1})
+        
+        # check if power mat file is present and get full path
+    if os.path.isfile(ctx.obj['power_mat_verified_path']):
+        ctx.obj.update({'power_verified_present':1})
     
             
 ### ------------------------------ SET PATH ------------------------------ ### 
@@ -108,54 +105,73 @@ def stft(ctx, freq):
 
 ### ------------------------------ VERIFY PSDs ---------------------------------- ###      
 @main.command()
+@click.option('--outlier_threshold', type = str, help = 'Enter outlier threshold, e.g. 4.5')
 @click.pass_context
-def verify(ctx):
+def verify(ctx, outlier_threshold):
     """
     Manual verification of PSDs
     """
-    import matplotlib.pyplot as plt
     from verify_psd import matplotGui
-    from pick import pick
     
     # check if index file was not found
     if not ctx.obj['power_present']:
         click.secho(f"\n -> File '{ctx.obj['file_power_mat']}' was not found in '{ctx.obj['search_path']}'.\n", fg = 'yellow', bold = True)
         return
     
-    # select from command list
-    main_dropdown_list = ['Original', 'Verified']
-    title = 'Load File:'
-    option, index = pick(main_dropdown_list, title, indicator = '-> ')
+    # pass threshold to properties dictionary
+    if outlier_threshold is None:
+        click.secho("\n -> 'Missing argument 'outlier_threshold'. Please use the following format: --outlier_threshold 4.2.\n", fg = 'yellow', bold = True)
+        return
+    else:    
+        ctx.obj.update({'outlier_threshold': float(outlier_threshold)})
     
-    if option == 'Original': # load index and power
-        index_df = pd.read_csv(ctx.obj['index_path'])
-        power_df = pd.read_pickle(ctx.obj['power_mat_path'])
-    elif option == 'Verified':
-        index_df = pd.read_csv(ctx.obj['index_verified_path'])
-        power_df = pd.read_pickle(ctx.obj['power_mat_verified_path'])
+    # load files
+    index_df = pd.read_csv(ctx.obj['index_path'])
+    power_df = pd.read_pickle(ctx.obj['power_mat_path'])
+    
+    # init gui object
+    matplotGui(ctx.obj, index_df, power_df)
+
+
+### ------------------------------ VERIFY PSDs ---------------------------------- ###      
+@main.command()
+@click.option('--outlier_threshold', type = str, help = 'Enter outlier threshold, e.g. 4.5')
+@click.pass_context
+def verifyr(ctx, outlier_threshold):
+    """
+    Manual re-verification of PSDs
+    """
+    from verify_psd import matplotGui
+    
+    # check if index file was not found
+    if not ctx.obj['power_verified_present']:
+        click.secho(f"\n -> File '{ctx.obj['file_power_mat_verified']}' was not found in '{ctx.obj['search_path']}'.\n", fg = 'yellow', bold = True)
+        return
+    
+    # pass threshold to properties dictionary
+    if outlier_threshold is None:
+        click.secho("\n -> 'Missing argument 'outlier_threshold'. Please use the following format: --outlier_threshold 4.2.\n", fg = 'yellow', bold = True)
+        return
+    else:    
+        ctx.obj.update({'outlier_threshold': float(outlier_threshold)})
+    
+    # load files
+    index_df = pd.read_csv(ctx.obj['index_verified_path'])
+    power_df = pd.read_pickle(ctx.obj['power_mat_verified_path'])
 
     # init gui object
-    callback = matplotGui(ctx.obj, index_df, power_df)
-    plt.subplots_adjust(bottom=0.15) # create space for buttons
-    
-    # add title and labels
-    callback.fig.suptitle('Select PSDs', fontsize=12)                                                   # title
-    callback.fig.text(0.9, 0.04, '**** KEY: Previous = <-, Next = ->, Accept = y, Reject = n, Accept all = a, Reject all = r ****' ,      # move/accept labels
-                      ha="right", bbox=dict(boxstyle="square", ec=(1., 1., 1.), fc=(0.9, 0.9, 0.9),))              
-                                                    
-    # add key press
-    callback.fig.canvas.mpl_connect('key_press_event', callback.keypress)
-    plt.show()
+    matplotGui(ctx.obj, index_df, power_df)
+
  
 ### ------------------------------ PLOT ---------------------------------- ###     
 @main.command()
+@click.option('--plot_type', type = str, help = 'Enter plot type, e.g. psd')
 @click.option('--freq', type = str, help = 'Enter frequency range, e.g. 1-30')
 @click.pass_context
-def plot(ctx, freq):
+def plot(ctx, freq, plot_type):
     """Enter plot menu"""
     
     from psd_analysis import melted_power_area, melted_power_ratio, melted_psds
-    from pick import pick
     from facet_plot_gui import GridGraph
     
     # check if power mat exists
@@ -163,21 +179,17 @@ def plot(ctx, freq):
         click.secho(f"\n -> File '{ctx.obj['file_power_mat']}' was not found in '{ctx.obj['search_path']}'" + 
                     "Need to run 'stft' before plotting.\n", fg = 'yellow', bold = True)
         return
-        
-    # select from command list
-    main_dropdown_list = ['mean PSDs','summary plot and data export - (power area)',
-                          'summary plot and data export - (power ratio)']
-    title = 'Please select file for analysis: '
-    option, index = pick(main_dropdown_list, title, indicator = '-> ')
     
+    # if plot_type is Noset(['power_area', 'power_ratio', 'psd'])
+        
     # load index and power mat
     index_df = pd.read_csv(ctx.obj['index_verified_path'])
     power_df = pd.read_pickle(ctx.obj['power_mat_verified_path'])
     
     # get categories
     categories = list(index_df.columns[index_df.columns.get_loc('stop_time')+1:])
-    click.echo(categories)
-    if option == 'summary plot and data export - (power area)':
+    
+    if plot_type == 'power_area':
         
         # get power area
         data = melted_power_area(index_df, power_df, ctx.obj['freq_ranges'], categories)
@@ -186,7 +198,7 @@ def plot(ctx, freq):
         GridGraph(ctx.obj['search_path'], ctx.obj['power_mat_verified_path'], data).draw_graph(ctx.obj['summary_plot_type'])
         return
     
-    if option == 'summary plot and data export - (power ratio)':
+    if plot_type == 'power_ratio':
         
         # get power ratio
         data = melted_power_ratio(index_df, power_df,  ctx.obj['freq_ratios'], categories)
@@ -205,7 +217,7 @@ def plot(ctx, freq):
         click.secho("\n -> 'Missing argument 'freq'. Please use the following format: --freq 1-30.\n", fg = 'yellow', bold = True)
         return
     
-    if option == 'mean PSDs':
+    if plot_type == 'psd':
         # get psd data
         psd_data = melted_psds(index_df, power_df, freq_range, categories)
         
