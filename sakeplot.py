@@ -42,8 +42,14 @@ def setpath():
     ui.pathEdit.setText(_translate("SAKEDSP", path))
     ui.errorBrowser.setText(_translate("SAKEDSP", out_str))
     
+
+    # check if index file is present and get full path
     if os.path.isfile(ctx.obj['index_path']):
         ctx.obj.update({'index_present':1})
+        
+    # check if power mat file is present and get full path
+    if os.path.isfile(ctx.obj['power_mat_path']):
+        ctx.obj.update({'power_present':1})
     
 ui.pathButton.clicked.connect(lambda:setpath())
 
@@ -60,13 +66,14 @@ def stft():
     index_df = load_index(ctx.obj['index_path'])
     
     ui.errorBrowser.setText(_translate("SAKEDSP","Analysis Go!"))
+    
     # get power 
-    power_df = get_pmat(index_df, ctx.obj)
+    index_df, power_df = get_pmat(index_df, ctx.obj)
     
     # save index and power
-    index_df.to_csv(ctx.obj['index_verified_path'], index = False)
+    index_df.to_csv(ctx.obj['index_path'], index = False)
     power_df.to_pickle(ctx.obj['power_mat_path'])
-    power_df.to_pickle(ctx.obj['power_mat_verified_path'])
+    
     
     # get freq_range for display
     freq_range = '-'.join(list(map(str, ctx.obj['fft_freq_range']))) + ' Hz'
@@ -111,6 +118,40 @@ def plotPSD():
 
 ui.PSDButton.clicked.connect(lambda:plotPSD())
 
+def verify():
+    """
+    Manual verification of PSDs
+    """
+    import matplotlib.pyplot as plt
+    from verify_psd import matplotGui
+    
+    # check if index file was not found
+    if not ctx.obj['power_present']:
+        ui.errorBrowser.setText(_translate("SAKEDSP",f"\n -> File '{ctx.obj['file_power_mat']}' was not found in '{ctx.obj['search_path']}'.\n"))
+        return
+    
+    #update threshold
+    ctx.obj.update({'outlier_threshold':float(ui.threshEdit.text())})
+    
+    #load index and power
+    index_df = pd.read_csv(ctx.obj['index_path'])
+    power_df = pd.read_pickle(ctx.obj['power_mat_path'])
+
+    # init gui object
+    callback = matplotGui(ctx.obj, index_df, power_df)
+    plt.subplots_adjust(bottom=0.15) # create space for buttons
+    
+    # add title and labels
+    callback.fig.suptitle('Select PSDs', fontsize=12)                                                   # title
+    callback.fig.text(0.9, 0.04, '**** KEY: Previous = <-, Next = ->, Accept = y, Reject = n, Accept all = a, Reject all = r ****' ,      # move/accept labels
+                      ha="right", bbox=dict(boxstyle="square", ec=(1., 1., 1.), fc=(0.9, 0.9, 0.9),))              
+                                                    
+    # add key press
+    callback.fig.canvas.mpl_connect('key_press_event', callback.keypress)
+    plt.show()
+    
+ui.verifyButton.clicked.connect(lambda:verify())
+
 # Execute if module runs as main program
 if __name__ == '__main__': 
 
@@ -132,6 +173,7 @@ if __name__ == '__main__':
     ctx.obj.update({'power_mat_verified_path': os.path.join(ctx.obj['search_path'], ctx.obj['file_power_mat_verified'])})
     
     ui.pathEdit.setText(_translate("SAKEDSP", ctx.obj['search_path']))
+    ui.threshEdit.setText(_translate("SAKEDSP", str(ctx.obj['outlier_threshold'])))
     
     # check if index file is present and get full path
     if os.path.isfile(ctx.obj['index_path']):

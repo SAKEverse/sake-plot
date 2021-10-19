@@ -15,6 +15,18 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
+    <item row="2" column="4">
+     <widget class="QPushButton" name="verifyButton">
+      <property name="font">
+       <font>
+        <pointsize>12</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>Verify</string>
+      </property>
+     </widget>
+    </item>
     <item row="3" column="2" colspan="2">
      <widget class="QLineEdit" name="PSDEdit">
       <property name="font">
@@ -48,18 +60,6 @@
       </property>
      </widget>
     </item>
-    <item row="2" column="4">
-     <widget class="QPushButton" name="verifyButton">
-      <property name="font">
-       <font>
-        <pointsize>12</pointsize>
-       </font>
-      </property>
-      <property name="text">
-       <string>Verify</string>
-      </property>
-     </widget>
-    </item>
     <item row="3" column="4">
      <widget class="QPushButton" name="PSDButton">
       <property name="font">
@@ -69,41 +69,6 @@
       </property>
       <property name="text">
        <string>Plot PSD</string>
-      </property>
-     </widget>
-    </item>
-    <item row="4" column="0">
-     <widget class="QLabel" name="labelPoweAreaRange">
-      <property name="font">
-       <font>
-        <pointsize>12</pointsize>
-        <weight>50</weight>
-        <bold>false</bold>
-       </font>
-      </property>
-      <property name="text">
-       <string>Power Area Range (hz):</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-      </property>
-     </widget>
-    </item>
-    <item row="4" column="1">
-     <widget class="QLineEdit" name="PoweAreaNumeratorEdit">
-      <property name="font">
-       <font>
-        <pointsize>12</pointsize>
-       </font>
-      </property>
-      <property name="text">
-       <string>1-30</string>
-      </property>
-      <property name="frame">
-       <bool>true</bool>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
       </property>
      </widget>
     </item>
@@ -142,8 +107,26 @@
       </property>
      </widget>
     </item>
-    <item row="5" column="0">
-     <widget class="QLabel" name="labelPlotType">
+    <item row="4" column="1">
+     <widget class="QLineEdit" name="PoweAreaNumeratorEdit">
+      <property name="font">
+       <font>
+        <pointsize>12</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>1-30</string>
+      </property>
+      <property name="frame">
+       <bool>true</bool>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="0">
+     <widget class="QLabel" name="labelPoweAreaRange">
       <property name="font">
        <font>
         <pointsize>12</pointsize>
@@ -152,25 +135,19 @@
        </font>
       </property>
       <property name="text">
-       <string>Plot Type:</string>
+       <string>Power Area Range (hz):</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
       </property>
      </widget>
     </item>
-    <item row="2" column="2" colspan="2">
-     <widget class="QLineEdit" name="threshEdit">
+    <item row="5" column="1" colspan="3">
+     <widget class="QComboBox" name="plotType">
       <property name="font">
        <font>
         <pointsize>12</pointsize>
        </font>
-      </property>
-      <property name="text">
-       <string>3</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
       </property>
      </widget>
     </item>
@@ -186,24 +163,20 @@
       </property>
      </widget>
     </item>
-    <item row="5" column="1" colspan="3">
-     <widget class="QComboBox" name="plotType">
+    <item row="5" column="0">
+     <widget class="QLabel" name="labelPlotType">
       <property name="font">
        <font>
         <pointsize>12</pointsize>
-       </font>
-      </property>
-     </widget>
-    </item>
-    <item row="4" column="4">
-     <widget class="QPushButton" name="PowerAreaButton">
-      <property name="font">
-       <font>
-        <pointsize>12</pointsize>
+        <weight>50</weight>
+        <bold>false</bold>
        </font>
       </property>
       <property name="text">
-       <string>Plot Power</string>
+       <string>Plot Type:</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
       </property>
      </widget>
     </item>
@@ -224,15 +197,6 @@
       </property>
      </widget>
     </item>
-    <item row="6" column="0" colspan="5">
-     <widget class="QTextBrowser" name="errorBrowser">
-      <property name="font">
-       <font>
-        <pointsize>10</pointsize>
-       </font>
-      </property>
-     </widget>
-    </item>
     <item row="2" column="0">
      <widget class="QLabel" name="labelThresh">
       <property name="font">
@@ -250,6 +214,27 @@
       </property>
      </widget>
     </item>
+    <item row="4" column="4">
+     <widget class="QPushButton" name="PowerAreaButton">
+      <property name="font">
+       <font>
+        <pointsize>12</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>Plot Power</string>
+      </property>
+     </widget>
+    </item>
+    <item row="6" column="0" colspan="5">
+     <widget class="QTextBrowser" name="errorBrowser">
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+       </font>
+      </property>
+     </widget>
+    </item>
     <item row="1" column="0" colspan="5">
      <widget class="QPushButton" name="STFTButton">
       <property name="font">
@@ -259,6 +244,21 @@
       </property>
       <property name="text">
        <string>Fourier Transform (STFT)</string>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="2" colspan="2">
+     <widget class="QLineEdit" name="threshEdit">
+      <property name="font">
+       <font>
+        <pointsize>12</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>4</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
       </property>
      </widget>
     </item>
