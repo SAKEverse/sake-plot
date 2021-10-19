@@ -28,6 +28,8 @@ class Ui_SAKEDSP(object):
         font = QtGui.QFont()
         font.setPointSize(12)
         self.pathEdit.setFont(font)
+        self.pathEdit.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
+        self.pathEdit.setReadOnly(True)
         self.pathEdit.setObjectName("pathEdit")
         self.gridLayout.addWidget(self.pathEdit, 0, 0, 1, 4)
         self.verifyButton = QtWidgets.QPushButton(self.centralwidget)
@@ -154,7 +156,7 @@ class Ui_SAKEDSP(object):
 
     def retranslateUi(self, SAKEDSP):
         _translate = QtCore.QCoreApplication.translate
-        SAKEDSP.setWindowTitle(_translate("SAKEDSP", "MainWindow"))
+        SAKEDSP.setWindowTitle(_translate("SAKEDSP", "SAKE Plot"))
         self.PSDEdit.setText(_translate("SAKEDSP", "1-30"))
         self.verifyButton.setText(_translate("SAKEDSP", "Verify"))
         self.PSDButton.setText(_translate("SAKEDSP", "Plot PSD"))
@@ -164,7 +166,7 @@ class Ui_SAKEDSP(object):
         self.PoweAreaDenomenatorEdit.setText(_translate("SAKEDSP", "none"))
         self.labelPlotType.setText(_translate("SAKEDSP", "Plot Type:"))
         self.threshEdit.setText(_translate("SAKEDSP", "3"))
-        self.pathButton.setText(_translate("SAKEDSP", "Set Path"))
+        self.pathButton.setText(_translate("SAKEDSP", "Set Path..."))
         self.PowerAreaButton.setText(_translate("SAKEDSP", "Plot Power"))
         self.labelPSDRange.setText(_translate("SAKEDSP", "PSD Range (hz):"))
         self.labelThresh.setText(_translate("SAKEDSP", "Outlier Threshold:"))
