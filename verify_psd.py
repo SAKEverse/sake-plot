@@ -143,29 +143,43 @@ class matplotGui:
         self.axs[0].clear()
         self.axs[1].clear() 
         
-        # get PSD and SEM
-        psd = np.mean(self.power_df['pmat'][self.i], axis = 1)
-        sem = np.std(self.power_df['pmat'][self.i], axis = 1) / np.sqrt(self.power_df['pmat'][self.i].shape[1])
-        time_plot = np.mean(self.power_df['pmat'][self.i], axis = 0)
+        # get pmat and freq
+        pmat = self.power_df['pmat'][self.i].copy()
+        freq = self.power_df['freq'][self.i].copy()
         
-        # get time
-        t = np.arange(0, time_plot.shape[0], 1)
+        # get time plot
+        time_plot = np.mean(pmat, axis = 0)
+        t = np.arange(0, time_plot.shape[0], 1) * self.fft_overlap * self.fft_win
         
-        self.axs[0].plot(t ,time_plot, marker = 'x', color='black', linewidth=1.5, alpha=0.9, label = self.index_df.index[self.i])
-        pmat, outliers = remove_outliers(self.power_df['pmat'][self.i])
-
+        # plot time plot (before outlier removal)
+        self.axs[0].plot(t ,time_plot, color='black', label = self.index_df.index[self.i])
         
-        # show outliers
+        # plot PSD (before outlier removal)
+        psd = np.mean(pmat, axis = 1)
+        sem = np.std(pmat, axis = 1) / np.sqrt(pmat.shape[1])
+        self.axs[1].plot(freq, psd, color='black', linewidth=1.5, alpha=0.9, label = self.index_df.index[self.i])
+        self.axs[1].fill_between(freq, psd+sem, psd-sem, color = 'black', alpha=0.2)
+        
+        # remove outliers
+        pmat, outliers = remove_outliers(pmat, self.outlier_window, self.outlier_threshold)
+        
+        # plot time plot (after outlier removal)
         self.axs[0].plot(t[outliers], time_plot[outliers], color='orange', linestyle='', marker='x')
+        
+        # plot PSD (after outlier removal)
+        psd = np.mean(pmat, axis = 1)
+        sem = np.std(pmat, axis = 1) / np.sqrt(pmat.shape[1])
+        self.axs[1].plot(freq, psd, color='orange', linewidth=1.5, alpha=0.9, label = self.index_df.index[self.i])
+        self.axs[1].fill_between(freq, psd+sem, psd-sem, color = 'orange', alpha=0.2)
+        self.axs[1].set_ylim(np.min(psd), np.max(psd))
+        
+        # add labels and background colors
         self.axs[0].set_facecolor(self.index_df['facearray'][self.i]);
         self.axs[0].legend(loc = 'upper right')
-        self.axs[0].set_xlabel('Time Bin')
+        self.axs[0].set_xlabel('Time (Seconds)')
         self.axs[0].set_ylabel('Mean Power')
-        
-        # plot PSD
-        self.axs[1].plot(self.power_df['freq'][self.i], psd, color='black', linewidth=1.5, alpha=0.9, label = self.index_df.index[self.i])
-        self.axs[1].fill_between(self.power_df['freq'][self.i], psd+sem, psd-sem, color = 'gray')
         self.axs[1].set_facecolor(self.index_df['facearray'][self.i]);
+        self.axs[1].legend(['Outlier_threshold = {:.1f}'.format(self.outlier_threshold)], loc = 'upper right')
         self.axs[1].set_xlabel('Frequency (Hz)')
         self.axs[1].set_ylabel('Power (V^2/Hz)')
 
@@ -173,7 +187,7 @@ class matplotGui:
 
          
     ## ------  Keyboard press ------ ##     
-    def keypress(self,event):
+    def keypress(self, event):
         if event.key == 'right':
             self.ind += 1 # add one to class index
             self.plot_data() # plot
@@ -181,7 +195,15 @@ class matplotGui:
         if event.key == 'left':
             self.ind -= 1 # subtract one to class index
             self.plot_data() # plot
+        
+        if event.key == 'up':
+            self.outlier_threshold += 0.5
+            self.plot_data() # plot
             
+        if event.key == 'down':
+            self.outlier_threshold -= 0.5
+            self.plot_data() # plot
+
         if event.key == 'y':
            # set values to arrays
            self.index_df.at[self.i, 'facearray'] = 'palegreen'
@@ -263,6 +285,8 @@ if __name__ == '__main__':
     # define frequencies of interest
     with open('settings.yaml', 'r') as file:
         settings = yaml.load(file, Loader=yaml.FullLoader)
+        
+    settings.update({'outlier_threshold':5, 'outlier_window':11})
     
     #### ---------------------------------------------------------------- ####
     

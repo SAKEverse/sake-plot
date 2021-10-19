@@ -168,7 +168,7 @@ def fast_outliers(arr:np.ndarray, window:int, threshold:float) -> np.ndarray:
     return outliers
 
 # define function that will be executed
-get_outliers = rolling_outliers
+get_outliers = fast_outliers
 
 
 
