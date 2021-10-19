@@ -34,5 +34,5 @@ outlier_threshold: 7
 outlier_window: 60
 power_area_mat: power_area.csv
 psd_mat: psd.csv
-search_path: C:\Users\panton01\Desktop\pydsp_analysis
+search_path: D:/Shared Temporary Data/example_files_sake
 summary_plot_type: violin

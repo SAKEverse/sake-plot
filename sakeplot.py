@@ -6,7 +6,8 @@ Created on Mon Oct 18 16:04:21 2021
 """
 from sakeplot_ui import Ui_SAKEDSP
 import sys, os
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtCore, QtWidgets, QtTest 
+from PyQt5.QtGui import QPixmap
 import yaml
 import subprocess
 
@@ -20,11 +21,16 @@ _translate = QtCore.QCoreApplication.translate
 script_dir=os.path.dirname(os.path.realpath(__file__))
 
 
-ui.plotType.addItems(['box','violin','boxen'])
+ui.plotType.addItems(['box','violin','boxen','bar'])
 ui.plotValue.addItems(['Area','Ratio'])
 
 class ctx():
     obj={}
+
+def updateImage(path):
+    ui.picLabel.setPixmap(QPixmap(path))
+    ui.picLabel.setScaledContents(True)
+    
 
 def setpath():
     """Set path to index file parent directory"""    
@@ -36,10 +42,16 @@ def setpath():
 ui.pathButton.clicked.connect(lambda:setpath())
 
 def stft():
-
+    
+    updateImage(os.path.join(script_dir,r"images\bomb2.png"))
+    
     ui.errorBrowser.setText(_translate("SAKEDSP","Processing... Check Terminal for Progess Bar"))
+    
+    QtTest.QTest.qWait(100)
     subprocess.run(["python", os.path.join(script_dir,r"pydsp.py"), "stft"])
-
+    
+    updateImage(os.path.join(script_dir,r"images\bomb3.png"))
+    
     # get freq_range for display
     freq_range = '-'.join(list(map(str, ctx.obj['fft_freq_range']))) + ' Hz'
     ui.errorBrowser.setText(_translate("SAKEDSP",f"\n -> Analysis completed: {freq_range} and file saved in:'{ctx.obj['search_path']}'.\n"))
@@ -71,10 +83,23 @@ def verify():
     #update threshold
     threshold= ui.threshEdit.text()
 
-    subprocess.run(["python", r"C:\Users\SuperComputer1\Documents\GitHub\pydsp\pydsp.py", "verify", "--outlier_threshold", threshold])
+    subprocess.run(["python", os.path.join(script_dir,r"pydsp.py"), "verify", "--outlier_threshold", threshold])
     
     
 ui.verifyButton.clicked.connect(lambda:verify())
+
+def reverify():
+    """
+    Manual verification of PSDs
+    """
+    
+    #update threshold
+    threshold= ui.threshEdit.text()
+
+    subprocess.run(["python", os.path.join(script_dir,r"pydsp.py"), "verifyr", "--outlier_threshold", threshold])
+    
+    
+ui.reverifyButton.clicked.connect(lambda:reverify())
 
 # Execute if module runs as main program
 if __name__ == '__main__': 
@@ -87,5 +112,15 @@ if __name__ == '__main__':
     
     ui.pathEdit.setText(_translate("SAKEDSP", ctx.obj['search_path']))
     ui.threshEdit.setText(_translate("SAKEDSP", str(ctx.obj['outlier_threshold'])))
+
+    updateImage(os.path.join(script_dir,r"images\bomb1.png"))
     
     app.exec_()
+    
+    
+    
+    
+    
+    
+    
+    
