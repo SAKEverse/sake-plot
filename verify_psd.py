@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from stft import f_fill
 from outlier_detection import get_outliers
+from tqdm import tqdm
 ### ----------------------------------------------------- ###
 
 
@@ -178,7 +179,7 @@ class matplotGui:
         self.power_df.reset_index(drop = True, inplace = True)
         
         # remove outliers
-        for i in range(len(self.power_df)):
+        for i in tqdm(range(len(self.power_df))):
             pmat, outliers = remove_outliers(self.power_df['pmat'][i], self.outlier_window, self.outlier_threshold)
         
         # save verified index and power_df file
