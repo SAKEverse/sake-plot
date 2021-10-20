@@ -11,6 +11,10 @@ from PyQt5.QtGui import QPixmap
 import yaml
 import subprocess
 import webbrowser
+from verify_psd import matplotGui
+from psd_analysis import melted_power_area, melted_power_ratio, melted_psds
+from facet_plot_gui import GridGraph
+from psd_analysis import get_pmat
 
 
 
@@ -39,7 +43,10 @@ def setpath():
     # add path to original ctx.obj
     widget=QtWidgets.QFileDialog()
     path=widget.getExistingDirectory(None,_translate("SAKEDSP", 'Set path for index.csv'),ctx.obj['search_path'])
-    subprocess.run(["python", os.path.join(script_dir,r"pydsp.py"), "setpath", path])
+    ui.pathEdit.setText(_translate("SAKEDSP",path))
+    msg=subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "setpath", path],capture_output=True)
+    ui.errorBrowser.setText(_translate("SAKEDSP",str(msg.stdout.decode())))
+    get_current_img()
     
 ui.pathButton.clicked.connect(lambda:setpath())
 
@@ -50,13 +57,14 @@ def stft():
     ui.errorBrowser.setText(_translate("SAKEDSP","Processing... Check Terminal for Progess Bar"))
     
     QtTest.QTest.qWait(100)
-    subprocess.run(["python", os.path.join(script_dir,r"pydsp.py"), "stft"])
-    
+    msg=subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "stft"])
+    if msg.returncode != 0:
+        ui.errorBrowser.setText(_translate("SAKEDSP","ERROR: Could not perform STFT... \nCheck terminal for errors..."))
+        return
+
     updateImage(os.path.join(script_dir,r"images\bomb3.png"))
     
-    # get freq_range for display
-    freq_range = '-'.join(list(map(str, ctx.obj['fft_freq_range']))) + ' Hz'
-    ui.errorBrowser.setText(_translate("SAKEDSP",f"\n -> Analysis completed: {freq_range} and file saved in:'{ctx.obj['search_path']}'.\n"))
+    ui.errorBrowser.setText(_translate("SAKEDSP",'STFT Complete!'))
     
     
 ui.STFTButton.clicked.connect(lambda:stft())
@@ -64,17 +72,24 @@ ui.STFTButton.clicked.connect(lambda:stft())
 def plotPSD():
     """Enter plot menu"""
     freq_range= ui.PSDEdit.text()
-    subprocess.run(["python", os.path.join(script_dir,r"pydsp.py"), "plot", "--freq", freq_range, '--plot_type','psd'])
+    msg=subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "plot", "--freq", freq_range, '--plot_type','psd'],capture_output=True)
+    if msg.returncode != 0:
+        ui.errorBrowser.setText(_translate("SAKEDSP","Check Terminal for Errors"))
 
 ui.PSDButton.clicked.connect(lambda:plotPSD())
 
 def plotPower():
     if ui.plotValue.currentText() == 'Area':
-        subprocess.run(["python", os.path.join(script_dir,r"pydsp.py"), "plot", '--plot_type','power_area','--kind',ui.plotType.currentText()])
+        msg=subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "plot", '--plot_type','power_area','--kind',ui.plotType.currentText()])
     
     if ui.plotValue.currentText() == 'Ratio':
-        subprocess.run(["python", os.path.join(script_dir,r"pydsp.py"), "plot", '--plot_type','power_ratio','--kind',ui.plotType.currentText()])
+        msg=subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "plot", '--plot_type','power_ratio','--kind',ui.plotType.currentText()])
+        
+    if msg.returncode != 0:
+        ui.errorBrowser.setText(_translate("SAKEDSP","Check Terminal for Errors"))
+    
 
+    
 ui.PowerAreaButton.clicked.connect(lambda:plotPower())
 
 def verify():
@@ -85,7 +100,14 @@ def verify():
     #update threshold
     threshold= ui.threshEdit.text()
 
-    subprocess.run(["python", os.path.join(script_dir,r"pydsp.py"), "verify", "--outlier_threshold", threshold])
+    msg=subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "verify", "--outlier_threshold", threshold])
+    
+    if msg.returncode != 0:
+        ui.errorBrowser.setText(_translate("SAKEDSP",'ERROR: Unable to verify... \nCheck terminal for errors'))
+        return
+    
+    ui.errorBrowser.setText(_translate("SAKEDSP",'Verified!'))
+    updateImage(os.path.join(script_dir,r"images\bomb4.png"))
     
     
 ui.verifyButton.clicked.connect(lambda:verify())
@@ -98,8 +120,14 @@ def reverify():
     #update threshold
     threshold= ui.threshEdit.text()
 
-    subprocess.run(["python", os.path.join(script_dir,r"pydsp.py"), "verifyr", "--outlier_threshold", threshold])
+    msg=subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "verifyr", "--outlier_threshold", threshold])
+    print()
+    if msg.returncode != 0:
+        ui.errorBrowser.setText(_translate("SAKEDSP",'ERROR: Unable to reverify... \nCheck terminal for errors'))
+        return
     
+    ui.errorBrowser.setText(_translate("SAKEDSP",'Reverified!'))
+    updateImage(os.path.join(script_dir,r"images\bomb4.png"))
     
 ui.reverifyButton.clicked.connect(lambda:reverify())
 
@@ -107,6 +135,24 @@ def openSettings():
     webbrowser.open(os.path.join(script_dir,r"settings.yaml"))
     
 ui.actionSettings.triggered.connect(lambda:openSettings())
+
+def get_current_img():
+    subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "checkpath"])
+    settings_path = 'settings.yaml'
+    
+    with open(settings_path, 'r') as file:
+        ctx.obj = yaml.load(file, Loader=yaml.FullLoader)
+        
+    if ctx.obj['power_verified_present'] == 1:
+        img=r"images\bomb4.png"
+    elif ctx.obj['power_present'] == 1:
+        img=r"images\bomb3.png"
+    elif ctx.obj['index_present'] == 1:
+        img=r"images\bomb2.png"
+    else:
+        img=r"images\bomb1.png"
+        
+    updateImage(os.path.join(script_dir,img))
 
 # Execute if module runs as main program
 if __name__ == '__main__': 
@@ -119,9 +165,9 @@ if __name__ == '__main__':
     
     ui.pathEdit.setText(_translate("SAKEDSP", ctx.obj['search_path']))
     ui.threshEdit.setText(_translate("SAKEDSP", str(ctx.obj['outlier_threshold'])))
-
-    updateImage(os.path.join(script_dir,r"images\bomb1.png"))
     
+    
+    get_current_img()
     app.exec_()
     
     

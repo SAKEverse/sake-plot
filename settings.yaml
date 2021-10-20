@@ -27,12 +27,15 @@ freq_ratios:
     - 30
   - - 40
     - 70
+index_present: 1
 mains_noise:
 - 59
 - 61
 outlier_threshold: 7
 outlier_window: 60
 power_area_mat: power_area.csv
+power_present: 1
+power_verified_present: 1
 psd_mat: psd.csv
 search_path: D:/Shared Temporary Data/example_files_sake
 summary_plot_type: violin

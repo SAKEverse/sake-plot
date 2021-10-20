@@ -28,6 +28,10 @@ def main(ctx):
     ctx.obj.update({'power_present': 0})
     ctx.obj.update({'power_verified_present':0})
     
+    ctx.obj['settings'].update({'index_present':0})
+    ctx.obj['settings'].update({'power_present':0})
+    ctx.obj['settings'].update({'power_verified_present':0})
+    
     # get path to files
     ctx.obj.update({'index_path': os.path.join(ctx.obj['search_path'], ctx.obj['file_index'])})
     ctx.obj.update({'power_mat_path': os.path.join(ctx.obj['search_path'], ctx.obj['file_power_mat'])})
@@ -37,15 +41,24 @@ def main(ctx):
     # check if index file is present and get full path
     if os.path.isfile(ctx.obj['index_path']):
         ctx.obj.update({'index_present':1})
+        ctx.obj['settings'].update({'index_present':1})
         
     # check if power mat file is present and get full path
     if os.path.isfile(ctx.obj['power_mat_path']):
         ctx.obj.update({'power_present':1})
+        ctx.obj['settings'].update({'power_present':1})
         
         # check if power mat file is present and get full path
     if os.path.isfile(ctx.obj['power_mat_verified_path']):
         ctx.obj.update({'power_verified_present':1})
-    
+        ctx.obj['settings'].update({'power_verified_present':1})
+
+    with open(settings_path, 'w') as file:
+        yaml.dump(ctx.obj['settings'], file)
+
+@main.command()
+def checkpath():
+    return
             
 ### ------------------------------ SET PATH ------------------------------ ### 
 @main.command()
@@ -60,8 +73,8 @@ def setpath(ctx, path):
     with open(settings_path, 'w') as file:
         yaml.dump(ctx.obj['settings'], file)
         
-    # click.secho(f"\n -> Path was set to:'{path}'.\n", fg = 'green', bold = True)
-    sys.stdout.write(f"\n -> Path was set to:'{path}'.\n")
+    click.secho(f"\n -> Path was set to:'{path}'.\n", fg = 'green', bold = True)
+
 
 
 ### ------------------------------ STFT ---------------------------------- ###     
@@ -74,16 +87,15 @@ def stft(ctx, freq):
 
     # check if index file was not found
     if not ctx.obj['index_present']:
-        click.secho(f"\n -> File '{ctx.obj['file_index']}' was not found in '{ctx.obj['search_path']}'.\n", fg = 'yellow', bold = True)
-        return
+        raise Exception(f"\n\n ---------> File '{ctx.obj['file_index']}' was not found in '{ctx.obj['search_path']}'. <---------\n")
     
     # get frequency
     if freq is not None:
         freq_range = [int(i) for i in freq.split('-')]
         
         if len(freq_range) !=2:
-              click.secho(f"\n -> '{freq}' could not be parsed. Please use the following format: 1-30.\n", fg = 'yellow', bold = True)
-              return
+              raise Exception(f"\n -> '{freq}' could not be parsed. Please use the following format: 1-30.\n")
+
     
     # load index 
     index_df = load_index(ctx.obj['index_path'])
@@ -112,8 +124,8 @@ def verify(ctx, outlier_threshold):
     
     # check if index file was not found
     if not ctx.obj['power_present']:
-        click.secho(f"\n -> File '{ctx.obj['file_power_mat']}' was not found in '{ctx.obj['search_path']}'.\n", fg = 'yellow', bold = True)
-        return
+        raise Exception(f"\n -> File '{ctx.obj['file_power_mat']}' was not found in '{ctx.obj['search_path']}'.\n") 
+
     
     # update outlier if present
     if outlier_threshold is not None:
@@ -139,8 +151,8 @@ def verifyr(ctx, outlier_threshold):
     
     # check if index file was not found
     if not ctx.obj['power_verified_present']:
-        click.secho(f"\n -> File '{ctx.obj['file_power_mat_verified']}' was not found in '{ctx.obj['search_path']}'.\n", fg = 'yellow', bold = True)
-        return
+        raise Exception(f"\n -> File '{ctx.obj['file_power_mat_verified']}' was not found in '{ctx.obj['search_path']}'.\n")
+
     
     # update outlier if present
     if outlier_threshold is not None:
