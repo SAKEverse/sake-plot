@@ -45,10 +45,7 @@ class GridGraph:
         
         self.graph_value = self.data.columns[-1]
         
-        #swtich the freuency to the fisrt value (hue)
-        ind=self.param_list.index('freq')
-        self.param_list[ind],self.param_list[0] = self.param_list[0],self.param_list[ind]
-        self.pivot_params=self.param_list
+
         PyQt5.QtCore.qInstallMessageHandler(self.handler)#supress the error message
 
         
@@ -160,6 +157,11 @@ class GridGraph:
         None.
 
         """
+        #swtich the freuency to the first value (X)
+        ind=self.param_list.index('freq')
+        self.param_list[ind],self.param_list[0] = self.param_list[0],self.param_list[ind]
+        self.pivot_params=self.param_list
+        
         self.type="self.draw_graph()"
         if kind: self.kind=kind
         # pick the first 4 parameters
@@ -193,9 +195,51 @@ class GridGraph:
         None.
 
         """
+        #swtich the freuency to the first value (X)
+        ind=self.param_list.index('freq')
+        self.param_list[ind],self.param_list[0] = self.param_list[0],self.param_list[ind]
+        self.pivot_params=self.param_list
+        
         self.type="self.draw_psd()"
         # first pram stays 'freq', sets up to 3 other params
         if kind: self.kind=kind
+        if params != None: self.param_list[1:] = params
+        if len(self.param_list) > 4:
+            self.graph_params=self.param_list[:4]
+        else:
+            self.graph_params=self.param_list
+        default=[None]*4
+        for i,param in enumerate(self.graph_params):
+            default[i]=param
+        #graph the facet plot with the first 4 categories
+        x,hue,col,row = default
+        self.g=sns.relplot(data = self.data, x = x, y = self.graph_value, hue = hue, col = col, row = row, height=2.5,aspect=6/4,kind='line',ci='se')
+        self.make_interactive()
+
+    def draw_dist(self,params=None):
+        """
+        
+
+        Parameters
+        ----------
+        kind : str, optional
+            DESCRIPTION. Type of plot, eg. line.
+        params : list, optional
+            DESCRIPTION. A list of 1-4 categories to graph with order:x,hue,col,row.
+
+        Returns
+        -------
+        None.
+
+        """
+        #swtich the power to the fisrt value (X)
+        ind=self.param_list.index('power')
+        self.param_list[ind],self.param_list[0] = self.param_list[0],self.param_list[ind]
+        self.pivot_params=self.param_list
+        
+        self.type="self.draw_dist()"
+        # first parameter 'value' becomes 'power', sets up to 3 other params
+        
         if params != None: self.param_list[1:] = params
         if len(self.param_list) > 4:
             self.graph_params=self.param_list[:4]
@@ -229,14 +273,14 @@ class GridGraph:
 
 
 if __name__ == '__main__':
-    path= r"C:\Users\gweiss01\Downloads\\"
+    path= r"C:\Users\SuperComputer1\Downloads\\"
     filename=r"melt_index.csv"
     data=pd.read_csv(os.path.join(path,filename),index_col=0)
-    data2=pd.read_csv(r"C:\Users\gweiss01\Downloads\melted_psd1.csv",index_col=0)
+    data2=pd.read_csv(r"C:\Users\SuperComputer1\Downloads\melted_dist.csv",index_col=0)
     
     # graph=GridGraph(path,filename,data)
     # graph.draw_graph('violin')
 
     graph=GridGraph(path,filename,data2)
-    graph.draw_psd()
+    graph.draw_dist()
 

@@ -72,7 +72,7 @@ ui.STFTButton.clicked.connect(lambda:stft())
 def plotPSD():
     """Enter plot menu"""
     freq_range= ui.PSDEdit.text()
-    msg=subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "plot", "--freq", freq_range, '--plot_type','psd'],capture_output=True)
+    msg=subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "plot", "--freq", freq_range, '--plot_type','psd'])
     if msg.returncode != 0:
         ui.errorBrowser.setText(_translate("SAKEDSP","Check Terminal for Errors"))
 
@@ -95,7 +95,7 @@ ui.PowerAreaButton.clicked.connect(lambda:plotPower())
 def plotDist():
     """Enter plot menu"""
     freq_range= ui.distEdit.text()
-    msg=subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "plot", "--freq", freq_range, '--plot_type','dist'],capture_output=True)
+    msg=subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "plot", "--freq", freq_range, '--plot_type','dist'])
     if msg.returncode != 0:
         ui.errorBrowser.setText(_translate("SAKEDSP","Check Terminal for Errors"))
     
