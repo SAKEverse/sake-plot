@@ -1,5 +1,5 @@
 ########## ------------------------------- IMPORTS ------------------------ ##########
-import os, yaml, click
+import os, yaml, click, sys
 import pandas as pd
 from filter_index import load_index
 ########## ---------------------------------------------------------------- ##########
@@ -9,15 +9,10 @@ from filter_index import load_index
 @click.pass_context
 def main(ctx):
     """
-
-                    __           
-      ___________  |  | __ ____  
-     /  ___/\__  \ |  |/ // __ \ 
-     \___ \  / __ \|    <\  ___/ 
-    /____  >(____  /__|_ \\___  >
-         \/      \/     \/    \/                                         
-             
-     
+    ------------------------------------                                       
+    --------------- SAKE ---------------                                       
+    ------------------------------------                                       
+                                                                                                                               
     """
     
     # get settings and pass to context
@@ -65,7 +60,8 @@ def setpath(ctx, path):
     with open(settings_path, 'w') as file:
         yaml.dump(ctx.obj['settings'], file)
         
-    click.secho(f"\n -> Path was set to:'{path}'.\n", fg = 'green', bold = True)
+    # click.secho(f"\n -> Path was set to:'{path}'.\n", fg = 'green', bold = True)
+    sys.stdout.write(f"\n -> Path was set to:'{path}'.\n")
 
 
 ### ------------------------------ STFT ---------------------------------- ###     
