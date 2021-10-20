@@ -92,6 +92,17 @@ def plotPower():
     
 ui.PowerAreaButton.clicked.connect(lambda:plotPower())
 
+def plotDist():
+    """Enter plot menu"""
+    freq_range= ui.distEdit.text()
+    msg=subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "plot", "--freq", freq_range, '--plot_type','dist'],capture_output=True)
+    if msg.returncode != 0:
+        ui.errorBrowser.setText(_translate("SAKEDSP","Check Terminal for Errors"))
+    
+
+    
+ui.distButton.clicked.connect(lambda:plotDist())
+
 def verify():
     """
     Manual verification of PSDs
