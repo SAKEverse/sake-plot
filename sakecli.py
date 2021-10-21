@@ -104,50 +104,35 @@ def stft(ctx, freq):
 ### ------------------------------ VERIFY PSDs ---------------------------------- ###      
 @main.command()
 @click.option('--outlier_threshold', type = str, help = 'Enter outlier threshold, e.g. 4.5')
+@click.option('--option', type = str, help = 'Add string for reverification, e.g. --option re')
 @click.pass_context
-def verify(ctx, outlier_threshold):
+def verify(ctx, outlier_threshold, option):
     """
     Manual verification of PSDs
     """
     from verify_psd import matplotGui
     
-    # check if index file was not found
-    if not ctx.obj['settings']['power_present']:
-        raise Exception(f"\n -> File '{ctx.obj['file_power_mat']}' was not found in '{ctx.obj['search_path']}'.\n") 
-
     # update outlier if present
     if outlier_threshold is not None:
         ctx.obj.update({'outlier_threshold': float(outlier_threshold)})
     
-    # load files
-    index_df = pd.read_csv(ctx.obj['index_path'])
-    power_df = pd.read_pickle(ctx.obj['power_mat_path'])
-    
-    # init gui object
-    matplotGui(ctx.obj, index_df, power_df)
-
-
-### ------------------------------ VERIFY PSDs ---------------------------------- ###      
-@main.command()
-@click.option('--outlier_threshold', type = str, help = 'Enter outlier threshold, e.g. 4.5')
-@click.pass_context
-def verifyr(ctx, outlier_threshold):
-    """
-    Manual re-verification of PSDs
-    """
-    from verify_psd import matplotGui
-    
-    # check if index file was not found
-    if not ctx.obj['settings']['power_verified_present']:
-        raise Exception(f"\n -> File '{ctx.obj['file_power_mat_verified']}' was not found in '{ctx.obj['search_path']}'.\n")
-
-    # update outlier if present
-    if outlier_threshold is not None:
-        ctx.obj.update({'outlier_threshold': float(outlier_threshold)})
-    
-    # load files
-    index_df = pd.read_csv(ctx.obj['index_verified_path'])
-    power_df = pd.read_pickle(ctx.obj['power_mat_verified_path'])
+    if option is None:
+        # check if index file was not found
+        if not ctx.obj['settings']['power_present']:
+            raise Exception(f"\n -> File '{ctx.obj['file_power_mat']}' was not found in '{ctx.obj['search_path']}'.\n") 
+            
+        # load files
+        index_df = pd.read_csv(ctx.obj['index_path'])
+        power_df = pd.read_pickle(ctx.obj['power_mat_path'])
+            
+    elif option  == 're': # re-verify
+        # check if index file was not found
+        if not ctx.obj['settings']['power_verified_present']:
+            raise Exception(f"\n -> File '{ctx.obj['file_power_mat_verified']}' was not found in '{ctx.obj['search_path']}'.\n")
+        
+        # load files
+        index_df = pd.read_csv(ctx.obj['index_verified_path'])
+        power_df = pd.read_pickle(ctx.obj['power_mat_verified_path'])
 
     # init gui object
     matplotGui(ctx.obj, index_df, power_df)
@@ -235,7 +220,7 @@ def plot(ctx, freq, plot_type, kind):
 
         # get psd data
         pdf_data = melted_power_dist(index_df, power_df, freq_range, categories)
-        breakpoint()
+
         # Graph interactive PSD
         GridGraph(ctx.obj['search_path'],  ctx.obj['psd_mat'], pdf_data).draw_dist()
         
