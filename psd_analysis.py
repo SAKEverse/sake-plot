@@ -306,7 +306,6 @@ def melted_power_dist(index_df:PandasDf, power_df:PandasDf, freq_range:list, sel
     
     # define edges for z normalized data and preallocate power_array
     power_array = np.array([])
-    
     edges = np.linspace(-5, 5, 100)
     for i in range(len(index_df)):    
         
@@ -315,10 +314,9 @@ def melted_power_dist(index_df:PandasDf, power_df:PandasDf, freq_range:list, sel
         
         # select power above threshold
         threshold =  np.mean(power) + np.std(power)
-        # power = power[power > threshold]
         
         # get kde
-        pdf = gaussian_kde(power, bw_method = 0.5).evaluate(edges)
+        pdf = gaussian_kde(power, bw_method = 1).evaluate(edges)
         
         # append to array
         power_array = np.concatenate((power_array, edges))
