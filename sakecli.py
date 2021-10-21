@@ -104,8 +104,8 @@ def stft(ctx, freq):
     index_df, power_df = get_pmat(index_df, ctx.obj)
     
     # save index and power
-    index_df.to_csv(ctx.obj['index_path'], index = False)
     power_df.to_pickle(ctx.obj['power_mat_path'])
+    index_df.to_csv(ctx.obj['index_path'], index = False)
     
     # get freq_range for display
     freq_range = '-'.join(list(map(str, ctx.obj['fft_freq_range']))) + ' Hz'
