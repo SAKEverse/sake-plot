@@ -1,5 +1,5 @@
 ########## ------------------------------- IMPORTS ------------------------ ##########
-import os, yaml, click, sys
+import os, yaml, click
 import pandas as pd
 from filter_index import load_index
 ########## ---------------------------------------------------------------- ##########
@@ -18,20 +18,12 @@ def main(ctx):
     # get settings and pass to context
     with open(settings_path, 'r') as file:
         settings = yaml.load(file, Loader=yaml.FullLoader)
+        settings.update({'index_present':0, 'power_present':0, 'power_verified_present':0})
         ctx.obj = settings.copy()
         
     # save original settings
     ctx.obj.update({'settings': settings}) 
-        
-    # set files present to zero
-    ctx.obj.update({'index_present': 0})
-    ctx.obj.update({'power_present': 0})
-    ctx.obj.update({'power_verified_present':0})
-    
-    ctx.obj['settings'].update({'index_present':0})
-    ctx.obj['settings'].update({'power_present':0})
-    ctx.obj['settings'].update({'power_verified_present':0})
-    
+
     # get path to files
     ctx.obj.update({'index_path': os.path.join(ctx.obj['search_path'], ctx.obj['file_index'])})
     ctx.obj.update({'power_mat_path': os.path.join(ctx.obj['search_path'], ctx.obj['file_power_mat'])})
@@ -40,17 +32,14 @@ def main(ctx):
     
     # check if index file is present and get full path
     if os.path.isfile(ctx.obj['index_path']):
-        ctx.obj.update({'index_present':1})
         ctx.obj['settings'].update({'index_present':1})
         
     # check if power mat file is present and get full path
     if os.path.isfile(ctx.obj['power_mat_path']):
-        ctx.obj.update({'power_present':1})
         ctx.obj['settings'].update({'power_present':1})
         
-        # check if power mat file is present and get full path
+    # check if power mat file is present and get full path
     if os.path.isfile(ctx.obj['power_mat_verified_path']):
-        ctx.obj.update({'power_verified_present':1})
         ctx.obj['settings'].update({'power_verified_present':1})
 
     with open(settings_path, 'w') as file:
@@ -86,7 +75,7 @@ def stft(ctx, freq):
     from psd_analysis import get_pmat
 
     # check if index file was not found
-    if not ctx.obj['index_present']:
+    if not ctx.obj['settings']['index_present']:
         raise Exception(f"\n\n ---------> File '{ctx.obj['file_index']}' was not found in '{ctx.obj['search_path']}'. <---------\n")
     
     # get frequency
@@ -123,10 +112,9 @@ def verify(ctx, outlier_threshold):
     from verify_psd import matplotGui
     
     # check if index file was not found
-    if not ctx.obj['power_present']:
+    if not ctx.obj['settings']['power_present']:
         raise Exception(f"\n -> File '{ctx.obj['file_power_mat']}' was not found in '{ctx.obj['search_path']}'.\n") 
 
-    
     # update outlier if present
     if outlier_threshold is not None:
         ctx.obj.update({'outlier_threshold': float(outlier_threshold)})
@@ -150,10 +138,9 @@ def verifyr(ctx, outlier_threshold):
     from verify_psd import matplotGui
     
     # check if index file was not found
-    if not ctx.obj['power_verified_present']:
+    if not ctx.obj['settings']['power_verified_present']:
         raise Exception(f"\n -> File '{ctx.obj['file_power_mat_verified']}' was not found in '{ctx.obj['search_path']}'.\n")
 
-    
     # update outlier if present
     if outlier_threshold is not None:
         ctx.obj.update({'outlier_threshold': float(outlier_threshold)})
@@ -183,7 +170,7 @@ def plot(ctx, freq, plot_type, kind):
     from facet_plot_gui import GridGraph
     
     # check if power mat exists
-    if not ctx.obj['power_present']:
+    if not ctx.obj['settings']['power_present']:
         click.secho(f"\n -> File '{ctx.obj['file_power_mat']}' was not found in '{ctx.obj['search_path']}'" + 
                     "Need to run 'stft' before plotting.\n", fg = 'yellow', bold = True)
         return
@@ -242,16 +229,15 @@ def plot(ctx, freq, plot_type, kind):
         psd_data = melted_psds(index_df, power_df, freq_range, categories)
         
         # Graph interactive PSD
-        breakpoint()
         GridGraph(ctx.obj['search_path'],  ctx.obj['psd_mat'], psd_data).draw_psd()
         
     if plot_type == 'dist':
 
         # get psd data
-        psd_data = melted_power_dist(index_df, power_df, freq_range, categories)
-        
+        pdf_data = melted_power_dist(index_df, power_df, freq_range, categories)
+        breakpoint()
         # Graph interactive PSD
-        GridGraph(ctx.obj['search_path'],  ctx.obj['psd_mat'], psd_data).draw_dist()
+        GridGraph(ctx.obj['search_path'],  ctx.obj['psd_mat'], pdf_data).draw_dist()
         
         
 # Execute if module runs as main program
