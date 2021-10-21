@@ -234,7 +234,7 @@ class GridGraph:
         """
         #swtich the power to the fisrt value (X)
         self.param_list.remove('power')
-
+        self.param_list.remove('threshold')
         self.param_list = ['power'] + self.param_list
         self.pivot_params=self.param_list
         
