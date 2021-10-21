@@ -323,7 +323,7 @@ def melted_power_dist(index_df:PandasDf, power_df:PandasDf, freq_range:list, sel
         # append to array
         power_array = np.concatenate((power_array, edges))
         density_array = np.concatenate((density_array, pdf))
-        threshold_array = np.concatenate((threshold_array, np.repeat(threshold, power.shape[0])))
+        threshold_array = np.concatenate((threshold_array, np.repeat(threshold, edges.shape[0])))
         
         # get length
         repeat_array[i] = edges.shape[0]
@@ -335,7 +335,7 @@ def melted_power_dist(index_df:PandasDf, power_df:PandasDf, freq_range:list, sel
     df.set_index('file_id', inplace = True) 
     
     # append to dataframe
-    # df['threshold'] = threshold_array
+    df['threshold'] = threshold_array
     df['power'] = power_array
     df['density'] = density_array
 
