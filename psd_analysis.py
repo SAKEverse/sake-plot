@@ -2,6 +2,7 @@
 import numpy as np
 import pandas as pd
 from stft import Stft, get_freq_index, Properties
+from scipy.stats import gaussian_kde
 from get_data import AdiGet
 from tqdm import tqdm
 from beartype import beartype
@@ -256,6 +257,89 @@ def melted_psds(index_df:PandasDf, power_df:PandasDf, freq_range:list, selected_
 
     return df
 
+def melted_power_dist(index_df:PandasDf, power_df:PandasDf, freq_range:list, selected_categories:list): ## don't drop file index
+    """
+    Get Power distribution and melt dataframe for seaborn plotting.
+
+    Parameters
+    ----------
+    index_df : PandasDf, experiment index
+    power_df : PandasDf, contains pmat and frequency vectors for every row of index_df
+    freqs : list, 2D list with frequency ranges for extraction of power area
+    selected_categories : list, columns that will be included in the melted
+
+    Returns
+    -------
+    df : PandasDf, melted df with pdf and categories
+
+    """
+
+    # create arrays for storage
+    power_array = np.array([])
+    density_array = np.array([])
+    threshold_array = np.array([])
+    repeat_array = np.zeros(len(index_df))
+    
+    # get selected columns
+    df = index_df[['file_id'] + selected_categories]
+    
+    # get all power areas
+    for i in range(len(index_df)): # iterate over dataframe
+        
+        # unpack frequency and power
+        freq = power_df['freq'][i]
+        power = power_df['pmat'][i]
+        
+        # get desired frequency index
+        f_idx = get_freq_index(freq, freq_range)
+        freq = freq[f_idx[0]:f_idx[1]+1]
+        power =  np.mean(power[f_idx[0]:f_idx[1]+1,:], axis = 0)
+        
+        power_df.at[i, 'pmat'] = power
+        
+        # append to array
+        power_array = np.concatenate((power_array, power))
+    
+    # get mean and sdev for normalization
+    avg = np.mean(power_array)
+    sdev = np.std(power_array)
+    
+    # define edges for z normalized data and preallocate power_array
+    power_array = np.array([])
+    
+    edges = np.linspace(-5, 5, 100)
+    for i in range(len(index_df)):    
+        
+        # normalize
+        power = (power_df['pmat'][i] - avg )/ sdev
+        
+        # select power above threshold
+        threshold =  np.mean(power) + np.std(power)
+        # power = power[power > threshold]
+        
+        # get kde
+        pdf = gaussian_kde(power, bw_method = 0.5).evaluate(edges)
+        
+        # append to array
+        power_array = np.concatenate((power_array, edges))
+        density_array = np.concatenate((density_array, pdf))
+        threshold_array = np.concatenate((threshold_array, np.repeat(threshold, power.shape[0])))
+        
+        # get length
+        repeat_array[i] = edges.shape[0]
+
+    # repeat array
+    df = df.reindex(df.index.repeat(repeat_array))
+    
+    # set file id as index
+    df.set_index('file_id', inplace = True) 
+    
+    # append to dataframe
+    # df['threshold'] = threshold_array
+    df['power'] = power_array
+    df['density'] = density_array
+
+    return df
 
 if __name__ == '__main__':
     x = 1
@@ -267,11 +351,11 @@ if __name__ == '__main__':
     
     ## define path and conditions for filtering
     filename = 'index.csv'
-    parent_folder = r'C:\Users\panton01\Desktop\pydsp_analysis'
+    parent_folder = r'C:\Users\panton01\Desktop\example_files'
     path =  os.path.join(parent_folder, filename)
     
     ## enter filter conditions
-    filter_conditions = {'brain_region':['bla', 'pfc'], 'treatment':['baseline','vehicle']} #
+    # filter_conditions = {'brain_region':['bla', 'pfc'], 'treatment':['baseline','vehicle']} #
     
     ## define frequencies of interest
     with open('settings.yaml', 'r') as file:
@@ -287,10 +371,11 @@ if __name__ == '__main__':
     
     # get pmat
         # get power 
-    power_df = get_pmat(index_df, settings)
+    # power_df = get_pmat(index_df, settings)
     
     # power_df.to_pickle(os.path.join(parent_folder, 'power_mat.pickle'))
-    # power_df = pd.read_pickle(r'C:\Users\panton01\Desktop\pydsp_analysis\power_mat.pickle')
+    power_df = pd.read_pickle(r'C:\Users\panton01\Desktop\example_files\power_mat.pickle')
+    df = melted_power_dist(index_df, power_df, [30,70], ['sex', 'treatment', 'brain_region'])
     
     # # remove mains noise and outliers!!!!!!!!!!!!!!!!!!!!! 
     # df = melted_power_ratio(index_df, power_df, settings['freq_ratios'], ['sex', 'treatment', 'brain_region']) #

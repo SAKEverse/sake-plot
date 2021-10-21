@@ -179,7 +179,7 @@ def plot(ctx, freq, plot_type, kind):
     if kind is not None:
         ctx.obj.update({'summary_plot_type':kind})
     
-    from psd_analysis import melted_power_area, melted_power_ratio, melted_psds
+    from psd_analysis import melted_power_area, melted_power_ratio, melted_psds, melted_power_dist
     from facet_plot_gui import GridGraph
     
     # check if power mat exists
@@ -189,7 +189,7 @@ def plot(ctx, freq, plot_type, kind):
         return
     
     # check if plot type is present in the correct format
-    plot_type_options = ['power_area', 'power_ratio', 'psd']
+    plot_type_options = ['power_area', 'power_ratio', 'psd', 'dist']
     
     if plot_type is None:
         click.secho("\n -> 'Missing argument 'plot_type'. Please use the following format: --plot_type power_area.\n"
@@ -226,23 +226,33 @@ def plot(ctx, freq, plot_type, kind):
         GridGraph(ctx.obj['search_path'], ctx.obj['power_mat_verified_path'], data).draw_graph(ctx.obj['summary_plot_type'])
         return
     
-    if plot_type == 'psd':
-        
-        # get frequency
-        if freq is not None:
-            freq_range = [int(i) for i in freq.split('-')]
-            if len(freq_range) !=2:
-                  click.secho(f"\n -> '{freq}' could not be parsed. Please use the following format: 1-30.\n", fg = 'yellow', bold = True)
-                  return
-        else:
-            click.secho("\n -> 'Missing argument 'freq'. Please use the following format: --freq 1-30.\n", fg = 'yellow', bold = True)
-            return
+    # get frequency
+    if freq is not None:
+        freq_range = [int(i) for i in freq.split('-')]
+        if len(freq_range) !=2:
+              click.secho(f"\n -> '{freq}' could not be parsed. Please use the following format: 1-30.\n", fg = 'yellow', bold = True)
+              return
+    else:
+        click.secho("\n -> 'Missing argument 'freq'. Please use the following format: --freq 1-30.\n", fg = 'yellow', bold = True)
+        return
     
+    if plot_type == 'psd':
+
         # get psd data
         psd_data = melted_psds(index_df, power_df, freq_range, categories)
         
         # Graph interactive PSD
+        breakpoint()
         GridGraph(ctx.obj['search_path'],  ctx.obj['psd_mat'], psd_data).draw_psd()
+        
+    if plot_type == 'dist':
+
+        # get psd data
+        psd_data = melted_power_dist(index_df, power_df, freq_range, categories)
+        
+        # Graph interactive PSD
+        GridGraph(ctx.obj['search_path'],  ctx.obj['psd_mat'], psd_data).draw_dist()
+        
         
 # Execute if module runs as main program
 if __name__ == '__main__': 
