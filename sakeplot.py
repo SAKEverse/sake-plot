@@ -131,7 +131,7 @@ def reverify():
     #update threshold
     threshold= ui.threshEdit.text()
 
-    msg=subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "verifyr", "--outlier_threshold", threshold])
+    msg=subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "verify", "--outlier_threshold", threshold,"--option","re"])
     print()
     if msg.returncode != 0:
         ui.errorBrowser.setText(_translate("SAKEDSP",'ERROR: Unable to reverify... \nCheck terminal for errors'))
