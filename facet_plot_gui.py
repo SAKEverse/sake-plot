@@ -176,7 +176,7 @@ class GridGraph:
         #graph the facet plot with the first 4 categories
         x,hue,col,row = default
         height=2.5
-        self.g=sns.catplot(data = self.data, x = x, y = self.graph_value, hue = hue, col = col, row = row, kind = self.kind,height=height,aspect=6/4)
+        self.g=sns.catplot(data = self.data, x = x, y = self.graph_value, hue = hue, col = col, row = row, kind = self.kind,height=height,aspect=6/4,ci=68)
         self.make_interactive()
     
     def draw_psd(self,kind=False,params=None):
