@@ -234,7 +234,7 @@ class GridGraph:
         """
         #swtich the power to the fisrt value (X)
         self.param_list.remove('power')
-        self.param_list.remove('threshold')
+
         self.param_list = ['power'] + self.param_list
         self.pivot_params=self.param_list
         
@@ -256,10 +256,17 @@ class GridGraph:
         for axis in self.g.axes.flatten():
             old_title=axis.get_title()
             #get parameters from graph axis
-            graph_dict={thing.split(" = ")[0]:thing.split(" = ")[1] for thing in old_title.split(" | ")}
-            (key1,val1),(key2,val2)=graph_dict.items()
-
-            temp=self.data[(self.data[key1]==val1) & (self.data[key2]==val2)]
+            
+            if ' | ' in old_title: 
+                graph_dict={thing.split(" = ")[0]:thing.split(" = ")[1] for thing in old_title.split(" | ")}
+                (key1,val1),(key2,val2)=graph_dict.items()
+                temp=self.data[(self.data[key1]==val1) & (self.data[key2]==val2)]
+            elif ' = ' in old_title:
+                key1,val1=old_title.split(" = ")
+                temp=self.data[(self.data[key1]==val1)]
+            else:
+                temp=self.data
+                
             for line_name,line in zip(temp[hue].unique(),axis.lines):
 
                 #get the threshold
