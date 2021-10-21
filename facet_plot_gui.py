@@ -158,8 +158,8 @@ class GridGraph:
 
         """
         #swtich the freuency to the first value (X)
-        ind=self.param_list.index('freq')
-        self.param_list[ind],self.param_list[0] = self.param_list[0],self.param_list[ind]
+        self.param_list.remove('freq')
+        self.param_list = ['freq'] + self.param_list
         self.pivot_params=self.param_list
         
         self.type="self.draw_graph()"
@@ -196,8 +196,8 @@ class GridGraph:
 
         """
         #swtich the freuency to the first value (X)
-        ind=self.param_list.index('freq')
-        self.param_list[ind],self.param_list[0] = self.param_list[0],self.param_list[ind]
+        self.param_list.remove('freq')
+        self.param_list = ['freq'] + self.param_list
         self.pivot_params=self.param_list
         
         self.type="self.draw_psd()"
