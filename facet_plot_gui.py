@@ -233,12 +233,13 @@ class GridGraph:
 
         """
         #swtich the power to the fisrt value (X)
-        ind=self.param_list.index('power')
-        self.param_list[ind],self.param_list[0] = self.param_list[0],self.param_list[ind]
+        self.param_list.remove('power')
+        self.param_list = ['power'] + self.param_list
         self.pivot_params=self.param_list
         
         self.type="self.draw_dist()"
         # first parameter 'value' becomes 'power', sets up to 3 other params
+        
         
         if params != None: self.param_list[1:] = params
         if len(self.param_list) > 4:
@@ -251,6 +252,34 @@ class GridGraph:
         #graph the facet plot with the first 4 categories
         x,hue,col,row = default
         self.g=sns.relplot(data = self.data, x = x, y = self.graph_value, hue = hue, col = col, row = row, height=2.5,aspect=6/4,kind='line',ci='se')
+        for axis in self.g.axes.flatten():
+            old_title=axis.get_title()
+            #get parameters from graph axis
+            graph_dict={thing.split(" = ")[0]:thing.split(" = ")[1] for thing in old_title.split(" | ")}
+            (key1,val1),(key2,val2)=graph_dict.items()
+
+            temp=self.data[(self.data[key1]==val1) & (self.data[key2]==val2)]
+            for line_name,line in zip(temp[hue].unique(),axis.lines):
+
+                #get the threshold
+                thresh=temp[temp[hue]==line_name]['threshold'].mean()
+                thresh_loc=(line.properties()['xdata']>thresh)[0]
+                
+                #Fill the areas under the curve to the left and right of the threshold
+                hatch=''
+                # if graph_dict['Genotype']=='Cre+':hatch='///'
+                axis.fill_between(x=line.properties()['xdata'][thresh_loc:],
+                                    y1=line.properties()['ydata'][thresh_loc:],
+                                    y2=0,
+                                    facecolor=line.properties()['color'],
+                                    alpha=.3,
+                                    hatch=hatch)
+                
+                # #find number of data points in the raw data below threshold and display on graph
+                # this_data=temp[(temp[key1]==val1) & (temp[key2]==val2) & (temp['Metric']==test)]
+                # total=len(temp[(temp[key1]==val1) & (temp[key2]==val2) & (temp['Metric']==test)]['Value'])
+                # vuln=sum(temp[(temp[key1]==val1) & (temp[key2]==val2) & (temp['Metric']==test)]['Value'] < line.properties()['xdata'][thresh_loc])
+                # axis.text(x=line.properties()['xdata'][thresh_loc],y=0,s="{:.0%}".format(vuln/total),ha='right',fontweight='bold',fontsize=24)
         self.make_interactive()
     
 
@@ -273,10 +302,10 @@ class GridGraph:
 
 
 if __name__ == '__main__':
-    path= r"C:\Users\SuperComputer1\Downloads\\"
+    path= r"C:\Users\gweiss01\Downloads\\"
     filename=r"melt_index.csv"
     data=pd.read_csv(os.path.join(path,filename),index_col=0)
-    data2=pd.read_csv(r"C:\Users\SuperComputer1\Downloads\melted_dist.csv",index_col=0)
+    data2=pd.read_csv(r"C:\Users\gweiss01\Downloads\melted_dist.csv",index_col=0)
     
     # graph=GridGraph(path,filename,data)
     # graph.draw_graph('violin')
