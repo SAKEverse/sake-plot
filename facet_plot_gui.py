@@ -271,7 +271,7 @@ class GridGraph:
 
                 #get the threshold
                 thresh=temp[temp[hue]==line_name]['threshold'].mean()
-                thresh_loc=(line.properties()['xdata']>thresh)[0]
+                thresh_loc=np.where((line.properties()['xdata']>thresh))[0][0]
                 
                 #Fill the areas under the curve to the left and right of the threshold
                 hatch=''
