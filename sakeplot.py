@@ -27,7 +27,7 @@ _translate = QtCore.QCoreApplication.translate
 script_dir=os.path.dirname(os.path.realpath(__file__))
 
 
-ui.plotType.addItems(['box','violin','boxen','bar'])
+ui.plotType.addItems(['box','violin','boxen','bar','swarm','strip'])
 ui.plotValue.addItems(['Area','Ratio'])
 
 class ctx():

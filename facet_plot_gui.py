@@ -110,7 +110,7 @@ class GridGraph:
             cond_df=filtered.pivot(columns=self.pivot_params[0],values=self.graph_value)
             cond_df=cond_df[self.data['freq'].unique()]
             cond_df = cond_df.transpose()
-            cond_df.columns = [cond]*cond_df.shape[1]
+            cond_df.columns = [cond+str(col) for col in cond_df.columns]
             
             # add to a concatenated df
             all_data=pd.concat([all_data,cond_df],axis=1)
@@ -234,7 +234,8 @@ class GridGraph:
         """
         #swtich the power to the fisrt value (X)
         self.param_list.remove('power')
-        self.param_list.remove('threshold')
+        if 'threshold' in self.param_list:
+            self.param_list.remove('threshold')
         self.param_list = ['power'] + self.param_list
         self.pivot_params=self.param_list
         
