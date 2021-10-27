@@ -15,6 +15,7 @@ pandas = "*"
 pyqt5 = "*"
 pyyaml = "*"
 scipy = "*"
+tqdm = "*"
 
 [dev-packages]
 

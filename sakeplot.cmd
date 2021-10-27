@@ -28,3 +28,5 @@ IF NOT EXIST Pipfile.lock (
 
 :: Launch app
 pipenv run python sakeplot.py
+
+TIMEOUT 10
