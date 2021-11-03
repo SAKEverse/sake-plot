@@ -47,7 +47,6 @@ class GridGraph:
         
 
         PyQt5.QtCore.qInstallMessageHandler(self.handler)#supress the error message
-        breakpoint()
         
 
     def on_pick(self,event):
