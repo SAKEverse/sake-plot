@@ -31,7 +31,6 @@ class GridGraph:
         None.
 
         """
-        breakpoint()
         self.kind='box'
         self.first_time=True
         self.g=None
@@ -39,8 +38,6 @@ class GridGraph:
         self.path=path
         self.filename=filename
         self.data = data
-        self.ids=data['animal_id']
-        self.data.drop(['animal_id'],inplace=True)
         #get the categories from the columns (exceptt the last one)
         
         self.param_list=list(self.data.columns[:-1])
@@ -50,7 +47,7 @@ class GridGraph:
         
 
         PyQt5.QtCore.qInstallMessageHandler(self.handler)#supress the error message
-
+        breakpoint()
         
 
     def on_pick(self,event):
@@ -105,7 +102,7 @@ class GridGraph:
         all_data=pd.DataFrame()
         # loop through the variables in the second category
         for cond in self.data[pivot_params[1]].unique():
-            
+            breakpoint()
             # make new table with the filter index
             filtered=self.data[export_index & (self.data[pivot_params[1]]==cond)]
             
@@ -113,8 +110,8 @@ class GridGraph:
             cond_df=filtered.pivot(columns=self.pivot_params[0],values=self.graph_value)
             cond_df=cond_df[self.data['freq'].unique()]
             cond_df = cond_df.transpose()
-            breakpoint()
-            cond_df.columns = [cond+str(col) for col in cond_df.columns]
+
+            cond_df.columns = [cond+"_"+str(col) for col in cond_df.columns]
             
             # add to a concatenated df
             all_data=pd.concat([all_data,cond_df],axis=1)
