@@ -150,7 +150,8 @@ def melted_power_area(index_df:PandasDf, power_df:PandasDf, freqs:list, selected
     index_df = pd.concat([index_df, pd.DataFrame(data = power_array, columns = freq_columns)], axis=1)
     
     # set file id as index
-    index_df.set_index('animal_id', inplace = True)    
+    index_df['id'] = index_df['animal_id'] + index_df['file_id']
+    index_df.set_index('id', inplace = True)    
     
     # melt dataframe for seaborn plotting
     df = pd.melt(index_df, id_vars = selected_categories, value_vars = freq_columns, var_name = 'freq', value_name = 'power_area',
@@ -193,7 +194,8 @@ def melted_power_ratio(index_df:PandasDf, power_df:PandasDf, freqs:list, selecte
     index_df = pd.concat([index_df, pd.DataFrame(data = power_array, columns = freq_columns)], axis=1)
     
     # set file id as index
-    index_df.set_index('animal_id', inplace = True)  
+    index_df['id'] = index_df['animal_id'] + index_df['file_id']
+    index_df.set_index('id', inplace = True)  
         
     # melt dataframe for seaborn plotting
     df = pd.melt(index_df, id_vars = selected_categories, value_vars = freq_columns, var_name = 'freq', value_name = 'power_ratio',
@@ -225,7 +227,8 @@ def melted_psds(index_df:PandasDf, power_df:PandasDf, freq_range:list, selected_
     repeat_array = np.zeros(len(index_df))
     
     # get selected columns
-    df = index_df[['animal_id'] + selected_categories]
+    index_df['id'] = index_df['animal_id'] + index_df['file_id']
+    df = index_df[['id'] + selected_categories]
     
     for i in range(len(index_df)): # iterate over dataframe
         
@@ -249,7 +252,7 @@ def melted_psds(index_df:PandasDf, power_df:PandasDf, freq_range:list, selected_
     df = df.reindex(df.index.repeat(repeat_array))
     
     # set file id as index
-    df.set_index('animal_id', inplace = True) 
+    df.set_index('id', inplace = True) 
     
     # append to dataframe
     df['freq'] = freq_array
@@ -281,7 +284,8 @@ def melted_power_dist(index_df:PandasDf, power_df:PandasDf, freq_range:list, sel
     repeat_array = np.zeros(len(index_df))
     
     # get selected columns
-    df = index_df[['animal_id'] + selected_categories]
+    index_df['id'] = index_df['animal_id'] + index_df['file_id']
+    df = index_df[['id'] + selected_categories]
     
     # get all power areas
     for i in range(len(index_df)): # iterate over dataframe
@@ -330,7 +334,7 @@ def melted_power_dist(index_df:PandasDf, power_df:PandasDf, freq_range:list, sel
     df = df.reindex(df.index.repeat(repeat_array))
     
     # set file id as index
-    df.set_index('animal_id', inplace = True) 
+    df.set_index('id', inplace = True) 
     
     # append to dataframe
     df['threshold'] = threshold_array
