@@ -150,7 +150,7 @@ def melted_power_area(index_df:PandasDf, power_df:PandasDf, freqs:list, selected
     index_df = pd.concat([index_df, pd.DataFrame(data = power_array, columns = freq_columns)], axis=1)
     
     # set file id as index
-    index_df['id'] = index_df['animal_id'].astype(str) + '_' + index_df['file_id'].astype(str)
+    index_df['id'] = index_df['animal_id'].astype(str) + index_df['file_id'].astype(str)
     index_df.set_index('id', inplace = True)    
     
     # melt dataframe for seaborn plotting
@@ -194,7 +194,7 @@ def melted_power_ratio(index_df:PandasDf, power_df:PandasDf, freqs:list, selecte
     index_df = pd.concat([index_df, pd.DataFrame(data = power_array, columns = freq_columns)], axis=1)
     
     # set file id as index
-    index_df['id'] = index_df['animal_id'].astype(str) + '_' + index_df['file_id'].astype(str)
+    index_df['id'] = index_df['animal_id'].astype(str) + index_df['file_id'].astype(str)
     index_df.set_index('id', inplace = True)  
         
     # melt dataframe for seaborn plotting
@@ -227,7 +227,7 @@ def melted_psds(index_df:PandasDf, power_df:PandasDf, freq_range:list, selected_
     repeat_array = np.zeros(len(index_df))
     
     # get selected columns
-    index_df['id'] = index_df['animal_id'].astype(str) + '_' + index_df['file_id'].astype(str)
+    index_df['id'] = index_df['animal_id'].astype(str) + index_df['file_id'].astype(str)
     df = index_df[['id'] + selected_categories]
     
     for i in range(len(index_df)): # iterate over dataframe
@@ -284,7 +284,7 @@ def melted_power_dist(index_df:PandasDf, power_df:PandasDf, freq_range:list, sel
     repeat_array = np.zeros(len(index_df))
     
     # get selected columns
-    index_df['id'] = index_df['animal_id'].astype(str) + '_' + index_df['file_id'].astype(str)
+    index_df['id'] = index_df['animal_id'].astype(str) + index_df['file_id'].astype(str)
     df = index_df[['id'] + selected_categories]
     
     # get all power areas
@@ -353,7 +353,7 @@ if __name__ == '__main__':
     
     ## define path and conditions for filtering
     filename = 'index.csv'
-    parent_folder = r'C:\Users\panton01\Desktop\example_files'
+    parent_folder = r'\\SUPERCOMPUTER1\Shared\example_files_sake'
     path =  os.path.join(parent_folder, filename)
     
     ## enter filter conditions
