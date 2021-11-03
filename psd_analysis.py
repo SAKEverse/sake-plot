@@ -34,7 +34,7 @@ def get_power_area(pmat:np.ndarray, freq_vec:np.ndarray, freqs:np.ndarray) -> np
     # init empty array to store powers
     powers = np.zeros(freq_idx.shape[0])
     for i in range(freq_idx.shape[0]):
-        powers[i] = np.sum(pmat[freq_idx[i,0]:freq_idx[i,1],:])
+        powers[i] = np.mean(pmat[freq_idx[i,0]:freq_idx[i,1],:])
     
     return powers
 
@@ -62,8 +62,8 @@ def get_power_ratio(pmat:np.ndarray, freq_vec:np.ndarray, freqs:np.ndarray) -> n
     # init empty array to store powers
     powers = np.zeros(freq_idx.shape[0])
     for i in range(freq_idx.shape[0]):
-        powers[i] = np.divide(np.sum(pmat[freq_idx[i,0,0]:freq_idx[i,0,1],:]),
-                              np.sum(pmat[freq_idx[i,1,0]:freq_idx[i,1,1],:]))                           
+        powers[i] = np.divide(np.mean(pmat[freq_idx[i,0,0]:freq_idx[i,0,1],:]),
+                              np.mean(pmat[freq_idx[i,1,0]:freq_idx[i,1,1],:]))                           
     return powers
         
 @beartype
