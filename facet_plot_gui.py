@@ -102,7 +102,6 @@ class GridGraph:
         all_data=pd.DataFrame()
         # loop through the variables in the second category
         for cond in self.data[pivot_params[1]].unique():
-            breakpoint()
             # make new table with the filter index
             filtered=self.data[export_index & (self.data[pivot_params[1]]==cond)]
             
@@ -111,7 +110,7 @@ class GridGraph:
             cond_df=cond_df[self.data['freq'].unique()]
             cond_df = cond_df.transpose()
 
-            cond_df.columns = [cond+"_"+str(col) for col in cond_df.columns]
+            cond_df.columns = [cond+str(col) for col in cond_df.columns]
             
             # add to a concatenated df
             all_data=pd.concat([all_data,cond_df],axis=1)
