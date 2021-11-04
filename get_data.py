@@ -46,7 +46,7 @@ class AdiGet:
                setattr(self, key, value)
        
         # get load path
-        self.file_path = os.path.join(self.folder_path, self.file_name)
+        self.file_path = os.path.join(self.search_path, self.folder_path, self.file_name)
 
 
     @beartype
@@ -66,6 +66,10 @@ class AdiGet:
         # get channel object
         ch_obj = fread.channels[self.channel_id]
 
+        # do not allow start times less 1 than because adi toolbox malfunctions
+        if self.start_time < 1:
+            self.start_time = 1
+            
         # get data 
         data = ch_obj.get_data(self.block+1, start_sample=self.start_time, stop_sample=self.stop_time)
     

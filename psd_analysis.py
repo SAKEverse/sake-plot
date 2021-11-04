@@ -83,7 +83,8 @@ def get_pmat(index_df:PandasDf, properties:dict) -> tuple((PandasDf, PandasDf)):
 
     """
     
-    # drop rows containing NaNs
+    # drop rows containing NaNs after filling folder_path and animal_id
+    index_df[['folder_path', 'animal_id']] = index_df[['folder_path', 'animal_id']] .fillna('')
     index_df = index_df.dropna().reset_index()
     index_df = index_df.drop(['index'], axis = 1)
 
@@ -94,6 +95,7 @@ def get_pmat(index_df:PandasDf, properties:dict) -> tuple((PandasDf, PandasDf)):
         
         # get properties
         file_properties = index_df[AdiGet.input_parameters].loc[i].to_dict()
+        file_properties.update({'search_path': properties['search_path']})
         
         # get signal
         signal = AdiGet(file_properties).get_data_adi()
@@ -353,7 +355,7 @@ if __name__ == '__main__':
     
     ## define path and conditions for filtering
     filename = 'index.csv'
-    parent_folder = r'\\SUPERCOMPUTER1\Shared\example_files_sake'
+    parent_folder = r'C:\Users\panton01\Desktop\example_files'
     path =  os.path.join(parent_folder, filename)
     
     ## enter filter conditions
@@ -373,10 +375,10 @@ if __name__ == '__main__':
     
     # get pmat
         # get power 
-    # power_df = get_pmat(index_df, settings)
+    power_df = get_pmat(index_df, settings)
     
     # power_df.to_pickle(os.path.join(parent_folder, 'power_mat.pickle'))
-    power_df = pd.read_pickle(r'C:\Users\panton01\Desktop\example_files\power_mat.pickle')
+    # power_df = pd.read_pickle(r'C:\Users\panton01\Desktop\example_files\power_mat.pickle')
     # df = melted_power_dist(index_df, power_df, [30,70], ['sex', 'treatment', 'brain_region'])
     
     # # remove mains noise and outliers!!!!!!!!!!!!!!!!!!!!! 
@@ -385,7 +387,7 @@ if __name__ == '__main__':
     # import seaborn as sns
     
     # # get melted power area
-    df = melted_power_area(index_df, power_df, settings['freq_ranges'], ['sex', 'treatment', 'brain_region'])
+    # df = melted_power_area(index_df, power_df, settings['freq_ranges'], ['sex', 'treatment', 'brain_region'])
     # # sns.catplot(data = df, x = 'freq', y = 'power_area', hue = 'treatment', col = 'sex', row = 'brain_region', kind = 'box')
     
     # # get melted psd
