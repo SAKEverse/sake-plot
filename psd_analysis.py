@@ -345,22 +345,67 @@ def melted_power_dist(index_df:PandasDf, power_df:PandasDf, freq_range:list, sel
 
     return df
 
+
+def norm_power(index_df, power_df, selection):
+    """
+    Normalize power by PSDs of selected condition, drop non matching conditions
+
+    Parameters
+    ----------
+    index_df : PandasDf, experiment index
+    power_df : PandasDf, contains pmat and frequency vectors for every row of index_df
+    selection : tuple, (column name, baseline group)
+
+    Returns
+    -------
+    index_df : PandasDf, with dropped indices where conditions are missing
+    power_df : PandasDf, with dropped indices where conditions are missing
+    
+    """
+
+    unique_id = 'id'
+    category, group  = selection
+
+    # generate unique ids for behavior
+    index_df.insert(0, unique_id, index_df['animal_id'].astype(str) + index_df['file_id'].astype(str))
+
+    # get number of unique groups under category
+    unique_groups = len(index_df[category].unique())
+
+    # iterate over unique ids
+    for uid in tqdm(index_df[unique_id].unique()):
+
+        # get matching idx
+        matching_entries = index_df[index_df[unique_id] == uid]
+
+        # drop groups that are not complete
+        if len(matching_entries) < unique_groups:
+            power_df = power_df.drop(matching_entries.index, axis=0)
+            index_df = index_df.drop(matching_entries.index, axis=0)
+        else:
+            # get baseline psd
+            base_idx = matching_entries[matching_entries[category] == group].index[0]
+            base_psd = np.mean(power_df.pmat[base_idx], axis=1)
+            
+            # divide matching groups by baseline psd
+            for i in matching_entries.index:
+                power_df.at[i, 'pmat'] = power_df['pmat'][i] / base_psd[:,None]
+
+    return index_df.reset_index().drop(['index'], axis = 1), power_df.reset_index().drop(['index'], axis = 1)
+        
+    
+
 if __name__ == '__main__':
     x = 1
     import os, yaml
     from load_index import load_index
-    # from facet_plot_gui import GridGraph
+    from facet_plot_gui import GridGraph
     
     ### ---------------------- USER INPUT -------------------------------- ###
     
     ## define path and conditions for filtering
-    filename = 'index.csv'
-    parent_folder = r'C:\Users\panton01\Desktop\example_files'
-    path =  os.path.join(parent_folder, filename)
-    
-    ## enter filter conditions
-    # filter_conditions = {'brain_region':['bla', 'pfc'], 'treatment':['baseline','vehicle']} #
-    
+    parent_folder = r'X:\Alyssa\EtOH_paper\acute_raw_data\etoh'
+
     ## define frequencies of interest
     with open('settings.yaml', 'r') as file:
         settings = yaml.load(file, Loader=yaml.FullLoader)
@@ -368,34 +413,32 @@ if __name__ == '__main__':
     ### ---------------------------------------------------------------- ####
     
     ## load data frame
-    index_df = load_index(path)
-    
-    ## save dataframe
-    # index_df.to_csv(os.path.join(parent_folder, filename.replace('csv','pickle')))
-    
-    # get pmat
-        # get power 
-    power_df = get_pmat(index_df, settings)
-    
+    index_df = load_index(os.path.join(parent_folder, 'index_verified.csv'))
+
+    # get power
+    # power_df = get_pmat(index_df, settings)    
     # power_df.to_pickle(os.path.join(parent_folder, 'power_mat.pickle'))
-    # power_df = pd.read_pickle(r'C:\Users\panton01\Desktop\example_files\power_mat.pickle')
+    
+    power_df = pd.read_pickle(os.path.join(parent_folder, 'power_mat_verified.pickle'))
+    
+    # normalize to baseline
+    index_df, power_df = norm_power(index_df, power_df, ('treatment', 'baseline1'))
     # df = melted_power_dist(index_df, power_df, [30,70], ['sex', 'treatment', 'brain_region'])
     
-    # # remove mains noise and outliers!!!!!!!!!!!!!!!!!!!!! 
     # df = melted_power_ratio(index_df, power_df, settings['freq_ratios'], ['sex', 'treatment', 'brain_region']) #
     
     # import seaborn as sns
     
-    # # get melted power area
-    # df = melted_power_area(index_df, power_df, settings['freq_ranges'], ['sex', 'treatment', 'brain_region'])
-    # # sns.catplot(data = df, x = 'freq', y = 'power_area', hue = 'treatment', col = 'sex', row = 'brain_region', kind = 'box')
+    # get melted power area
+    # data = melted_power_area(index_df, power_df, settings['freq_ranges'], ['sex', 'treatment', 'brain_region'])
+    # GridGraph(parent_folder, 'test.csv', data).draw_graph('box')
+    
+    # sns.catplot(data = df, x = 'freq', y = 'power_area', hue = 'treatment', col = 'sex', row = 'brain_region', kind = 'box')
     
     # # get melted psd
-    # df = melted_psds(index_df, power_df, [1,30], ['sex', 'treatment', 'brain_region'])
-    # df.to_csv('melted_psd.csv',index=False)
-    # # g = sns.FacetGrid(df.iloc[::5,:], hue='treatment', row='sex', col='brain_region', palette='plasma')
-    # # g.map(sns.lineplot, 'freq', 'power')
-    
+    data = melted_psds(index_df, power_df, [1, 120], ['sex', 'treatment', 'brain_region'])
+    GridGraph(parent_folder,  'test.csv', data).draw_psd()
+
     # df.to_csv('melted_psd.csv',index=True)
     # path = r'C:\Users\panton01\Desktop\pydsp_analysis'
     # filename = 'power_area_df.csv'
