@@ -210,7 +210,7 @@ class Ui_SAKEDSP(object):
         self.STFTButton.setText(_translate("SAKEDSP", "Fourier Transform (STFT)"))
         self.PSDButton.setText(_translate("SAKEDSP", "Plot PSD"))
         self.threshEdit.setText(_translate("SAKEDSP", "4"))
-        self.labelNormalize.setText(_translate("SAKEDSP", "Normalization:"))
+        self.labelNormalize.setText(_translate("SAKEDSP", "Baseline Category/Group:"))
         self.checkBoxNorm.setText(_translate("SAKEDSP", "Normalize?"))
         self.menuFile.setTitle(_translate("SAKEDSP", "File"))
         self.actionSettings.setText(_translate("SAKEDSP", "Settings"))

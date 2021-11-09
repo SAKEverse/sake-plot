@@ -141,9 +141,11 @@ def norm_col_changed():
     """
     Manual verification of PSDs
     """
-    index=pd.read_csv(os.path.join(ctx.obj['search_path'],'index.csv'))
-    ui.normGroup.clear()
-    ui.normGroup.addItems(index[ui.normCol.currentText()].unique())
+    try:
+        index=pd.read_csv(os.path.join(ctx.obj['search_path'],'index.csv'))
+        ui.normGroup.clear()
+        ui.normGroup.addItems(index[ui.normCol.currentText()].unique())
+    except:pass
         
     
 ui.normCol.currentTextChanged.connect(lambda:norm_col_changed())
@@ -172,9 +174,13 @@ def get_current_img():
     updateImage(os.path.join(script_dir,img))
     
     #get groups and columns
-    index=pd.read_csv(os.path.join(ctx.obj['search_path'],'index.csv'))
-    ui.normCol.addItems(list(index.columns)[list(index.columns).index('stop_time')+1:-1])
-    ui.normGroup.addItems(index[ui.normCol.currentText()].unique())
+    try:
+        ui.normCol.clear()
+        ui.normGroup.clear()
+        index=pd.read_csv(os.path.join(ctx.obj['search_path'],'index.csv'))
+        ui.normCol.addItems(list(index.columns)[list(index.columns).index('stop_time')+1:-1])
+        ui.normGroup.addItems(index[ui.normCol.currentText()].unique())
+    except:pass
 
 # Execute if module runs as main program
 if __name__ == '__main__': 
@@ -184,6 +190,9 @@ if __name__ == '__main__':
     
     with open(settings_path, 'r') as file:
         ctx.obj = yaml.load(file, Loader=yaml.FullLoader)
+    
+    if not os.path.isdir(ctx.obj['search_path']):
+        ctx.obj['search_path']=""
     
     ui.pathEdit.setText(_translate("SAKEDSP", ctx.obj['search_path']))
     ui.threshEdit.setText(_translate("SAKEDSP", str(ctx.obj['outlier_threshold'])))
