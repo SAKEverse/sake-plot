@@ -145,10 +145,12 @@ def norm_col_changed():
         index=pd.read_csv(os.path.join(ctx.obj['search_path'],'index.csv'))
         ui.normGroup.clear()
         ui.normGroup.addItems(index[ui.normCol.currentText()].unique())
+        norm_changed()
     except:pass
         
     
-ui.normCol.currentTextChanged.connect(lambda:norm_col_changed())
+ui.normCol.activated.connect(lambda:norm_col_changed())
+ui.normGroup.activated.connect(lambda:norm_changed())
 
 def openSettings():
     webbrowser.open(os.path.join(script_dir,r"settings.yaml"))
