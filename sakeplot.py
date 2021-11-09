@@ -11,6 +11,7 @@ from PyQt5.QtGui import QPixmap
 import yaml
 import subprocess
 import webbrowser
+import pandas as pd
 from verify_psd import matplotGui
 from psd_analysis import melted_power_area, melted_power_ratio, melted_psds
 from facet_plot_gui import GridGraph
@@ -123,24 +124,29 @@ def verify():
     
 ui.verifyButton.clicked.connect(lambda:verify())
 
-def reverify():
+def norm_changed():
     """
     Manual verification of PSDs
     """
     
-    #update threshold
-    threshold= ui.threshEdit.text()
+    if ui.checkBoxNorm.isChecked():
+        subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "norm_data", "--enable", "true", "--column", ui.normCol.currentText(), "--group", ui.normGroup.currentText()])
+    else:
+        subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "norm_data", "--enable", "false", "--column", ui.normCol.currentText(), "--group", ui.normGroup.currentText()])
+        
+    
+ui.checkBoxNorm.stateChanged.connect(lambda:norm_changed())
 
-    msg=subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "verify", "--outlier_threshold", threshold,"--option","re"])
-    print()
-    if msg.returncode != 0:
-        ui.errorBrowser.setText(_translate("SAKEDSP",'ERROR: Unable to reverify... \nCheck terminal for errors'))
-        return
+def norm_col_changed():
+    """
+    Manual verification of PSDs
+    """
+    index=pd.read_csv(os.path.join(ctx.obj['search_path'],'index.csv'))
+    ui.normGroup.clear()
+    ui.normGroup.addItems(index[ui.normCol.currentText()].unique())
+        
     
-    ui.errorBrowser.setText(_translate("SAKEDSP",'Reverified!'))
-    updateImage(os.path.join(script_dir,r"images\bomb4.png"))
-    
-ui.reverifyButton.clicked.connect(lambda:reverify())
+ui.normCol.currentTextChanged.connect(lambda:norm_col_changed())
 
 def openSettings():
     webbrowser.open(os.path.join(script_dir,r"settings.yaml"))
@@ -164,6 +170,11 @@ def get_current_img():
         img=r"images\bomb1.png"
         
     updateImage(os.path.join(script_dir,img))
+    
+    #get groups and columns
+    index=pd.read_csv(os.path.join(ctx.obj['search_path'],'index.csv'))
+    ui.normCol.addItems(list(index.columns)[list(index.columns).index('stop_time')+1:-1])
+    ui.normGroup.addItems(index[ui.normCol.currentText()].unique())
 
 # Execute if module runs as main program
 if __name__ == '__main__': 
