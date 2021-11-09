@@ -47,8 +47,9 @@ def main(ctx):
 
 @main.command()
 def checkpath():
+    """Reserved for gui use""" 
     return
-            
+           
 ### ------------------------------ SET PATH ------------------------------ ### 
 @main.command()
 @click.argument('path', type = str)
@@ -64,6 +65,25 @@ def setpath(ctx, path):
         
     click.secho(f"\n -> Path was set to:'{path}'.\n", fg = 'green', bold = True)
 
+
+### ------------------------------ STFT ---------------------------------- ###  
+@main.command()
+@click.option('--enable', type = str, help = 'Enable normalization')
+@click.option('--column', type = str, help = 'Category to normalize')
+@click.option('--group', type = str, help = 'Group to use for normalization')
+def norm_data(ctx, enable, column, group):
+    """Update settings file with norm data""" 
+    
+    if bool(enable):
+        ctx.obj['settings']['normalize'] = 1
+        ctx.obj['settings']['norm_groups'] = [column, group]
+    else:
+        ctx.obj['settings']['normalize'] = 0 
+
+    # write to file
+    with open(settings_path, 'w') as file:
+        yaml.dump(ctx.obj['settings'], file)
+    return
 
 
 ### ------------------------------ STFT ---------------------------------- ###     
@@ -104,9 +124,8 @@ def stft(ctx, freq):
 ### ------------------------------ VERIFY PSDs ---------------------------------- ###      
 @main.command()
 @click.option('--outlier_threshold', type = str, help = 'Enter outlier threshold, e.g. 4.5')
-@click.option('--option', type = str, help = 'Add string for reverification, e.g. --option re')
 @click.pass_context
-def verify(ctx, outlier_threshold, option):
+def verify(ctx, outlier_threshold): #, option
     """
     Manual verification of PSDs
     """
@@ -115,24 +134,14 @@ def verify(ctx, outlier_threshold, option):
     # update outlier if present
     if outlier_threshold is not None:
         ctx.obj.update({'outlier_threshold': float(outlier_threshold)})
-    
-    if option is None:
-        # check if index file was not found
-        if not ctx.obj['settings']['power_present']:
-            raise Exception(f"\n -> File '{ctx.obj['file_power_mat']}' was not found in '{ctx.obj['search_path']}'.\n") 
-            
-        # load files
-        index_df = pd.read_csv(ctx.obj['index_path'])
-        power_df = pd.read_pickle(ctx.obj['power_mat_path'])
-            
-    elif option  == 're': # re-verify
-        # check if index file was not found
-        if not ctx.obj['settings']['power_verified_present']:
-            raise Exception(f"\n -> File '{ctx.obj['file_power_mat_verified']}' was not found in '{ctx.obj['search_path']}'.\n")
+
+    # check if index file was not found
+    if not ctx.obj['settings']['power_present']:
+        raise Exception(f"\n -> File '{ctx.obj['file_power_mat']}' was not found in '{ctx.obj['search_path']}'.\n") 
         
-        # load files
-        index_df = pd.read_csv(ctx.obj['index_verified_path'])
-        power_df = pd.read_pickle(ctx.obj['power_mat_verified_path'])
+    # load files
+    index_df = pd.read_csv(ctx.obj['index_path'])
+    power_df = pd.read_pickle(ctx.obj['power_mat_path'])
 
     # init gui object
     matplotGui(ctx.obj, index_df, power_df)
@@ -151,7 +160,7 @@ def plot(ctx, freq, plot_type, kind):
     if kind is not None:
         ctx.obj.update({'summary_plot_type':kind})
     
-    from psd_analysis import melted_power_area, melted_power_ratio, melted_psds, melted_power_dist
+    from psd_analysis import norm_power, melted_power_area, melted_power_ratio, melted_psds, melted_power_dist
     from facet_plot_gui import GridGraph
     
     # check if power mat exists
@@ -175,7 +184,11 @@ def plot(ctx, freq, plot_type, kind):
         
     # load index and power mat
     index_df = pd.read_csv(ctx.obj['index_verified_path'])
-    power_df = pd.read_pickle(ctx.obj['power_mat_verified_path'])
+    power_df = pd.read_pickle(ctx.obj['power_mat_verified_path'])  
+    
+    # normalize psds based on condition
+    if bool(ctx.obj['settings']['normalize']):
+         index_df, power_df = norm_power(index_df, power_df, ctx.obj['settings']['norm_groups'])
     
     # get categories
     categories = list(index_df.columns[index_df.columns.get_loc('stop_time')+1:])
