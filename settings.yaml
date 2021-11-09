@@ -28,6 +28,10 @@ freq_ratios:
   - - 40
     - 70
 index_present: 1
+normalize: 0
+norm_groups:
+- treatment
+- baseline
 mains_noise:
 - 59
 - 61

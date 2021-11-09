@@ -354,7 +354,7 @@ def norm_power(index_df, power_df, selection):
     ----------
     index_df : PandasDf, experiment index
     power_df : PandasDf, contains pmat and frequency vectors for every row of index_df
-    selection : tuple, (column name, baseline group)
+    selection : List/Tuple, (column name, baseline group)
 
     Returns
     -------
@@ -363,33 +363,38 @@ def norm_power(index_df, power_df, selection):
     
     """
 
-    unique_id = 'id'
+    unique_id = 'animal_id'
     category, group  = selection
 
-    # generate unique ids for behavior
-    index_df.insert(0, unique_id, index_df['animal_id'].astype(str) + index_df['file_id'].astype(str))
-
-    # get number of unique groups under category
+    # get number of unique groups and regions
     unique_groups = len(index_df[category].unique())
+    unique_regions = index_df['brain_region'].unique()
+    unique_ids = index_df[unique_id].unique()
+    
+    # iterate over brain regions
+    for region in unique_regions:
+        
+        # regions 
+        region_df = index_df[index_df['brain_region'] == region]
 
-    # iterate over unique ids
-    for uid in tqdm(index_df[unique_id].unique()):
+        # iterate over unique ids
+        for uid in unique_ids:   
 
-        # get matching idx
-        matching_entries = index_df[index_df[unique_id] == uid]
-
-        # drop groups that are not complete
-        if len(matching_entries) < unique_groups:
-            power_df = power_df.drop(matching_entries.index, axis=0)
-            index_df = index_df.drop(matching_entries.index, axis=0)
-        else:
-            # get baseline psd
-            base_idx = matching_entries[matching_entries[category] == group].index[0]
-            base_psd = np.mean(power_df.pmat[base_idx], axis=1)
-            
-            # divide matching groups by baseline psd
-            for i in matching_entries.index:
-                power_df.at[i, 'pmat'] = power_df['pmat'][i] / base_psd[:,None]
+            # get matching idx
+            matching_entries = region_df[region_df[unique_id] == uid]
+    
+            # drop groups that are not complete
+            if len(matching_entries) < unique_groups:
+                power_df = power_df.drop(matching_entries.index, axis=0)
+                index_df = index_df.drop(matching_entries.index, axis=0)
+            else:
+                # get baseline psd
+                base_idx = matching_entries[matching_entries[category] == group].index[0]
+                base_psd = np.mean(power_df.pmat[base_idx], axis=1)
+                
+                # divide matching groups by baseline psd
+                for i in matching_entries.index:
+                    power_df.at[i, 'pmat'] = power_df['pmat'][i] / base_psd[:,None]
 
     return index_df.reset_index().drop(['index'], axis = 1), power_df.reset_index().drop(['index'], axis = 1)
         
@@ -422,7 +427,7 @@ if __name__ == '__main__':
     power_df = pd.read_pickle(os.path.join(parent_folder, 'power_mat_verified.pickle'))
     
     # normalize to baseline
-    index_df, power_df = norm_power(index_df, power_df, ('treatment', 'baseline1'))
+    index_df, power_df = norm_power(index_df, power_df, ['treatment', 'baseline1'])
     # df = melted_power_dist(index_df, power_df, [30,70], ['sex', 'treatment', 'brain_region'])
     
     # df = melted_power_ratio(index_df, power_df, settings['freq_ratios'], ['sex', 'treatment', 'brain_region']) #
@@ -430,14 +435,14 @@ if __name__ == '__main__':
     # import seaborn as sns
     
     # get melted power area
-    # data = melted_power_area(index_df, power_df, settings['freq_ranges'], ['sex', 'treatment', 'brain_region'])
-    # GridGraph(parent_folder, 'test.csv', data).draw_graph('box')
+    data = melted_power_area(index_df, power_df, settings['freq_ranges'], ['sex', 'treatment', 'brain_region'])
+    GridGraph(parent_folder, 'test.csv', data).draw_graph('box')
     
     # sns.catplot(data = df, x = 'freq', y = 'power_area', hue = 'treatment', col = 'sex', row = 'brain_region', kind = 'box')
     
     # # get melted psd
-    data = melted_psds(index_df, power_df, [1, 120], ['sex', 'treatment', 'brain_region'])
-    GridGraph(parent_folder,  'test.csv', data).draw_psd()
+    # data = melted_psds(index_df, power_df, [1, 120], ['sex', 'treatment', 'brain_region'])
+    # GridGraph(parent_folder,  'test.csv', data).draw_psd()
 
     # df.to_csv('melted_psd.csv',index=True)
     # path = r'C:\Users\panton01\Desktop\pydsp_analysis'
