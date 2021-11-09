@@ -130,9 +130,9 @@ def norm_changed():
     """
     
     if ui.checkBoxNorm.isChecked():
-        subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "norm_data", "--enable", "true", "--column", ui.normCol.currentText(), "--group", ui.normGroup.currentText()])
+        subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "normalize", "--enable", "true", "--column", ui.normCol.currentText(), "--group", ui.normGroup.currentText()])
     else:
-        subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "norm_data", "--enable", "false", "--column", ui.normCol.currentText(), "--group", ui.normGroup.currentText()])
+        subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "normalize", "--enable", "false", "--column", ui.normCol.currentText(), "--group", ui.normGroup.currentText()])
         
     
 ui.checkBoxNorm.stateChanged.connect(lambda:norm_changed())
