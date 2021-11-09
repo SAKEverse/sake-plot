@@ -54,20 +54,20 @@ class matplotGui:
         # get values from dictionary
         for key, value in settings.items():
                setattr(self, key, value)
-               
+
         # wait time after plot
         self.wait_time = 0.1 # in seconds
+        self.bcg_color = {-1:'w', 0:'salmon', 1:'palegreen'}
 
         # pass object attributes to class
         self.power_df = power_df                      
         self.index_df = index_df
         
-        # set accepted to -1
-        self.index_df['accepted'] = -1
-        
-        # get background
-        self.index_df['facearray'] = 'w'
-        
+        # if first time verifying initialize values
+        if 'accepted' not in self.index_df.columns:
+            # self.index_df.insert(0, 'facearray', 'w')
+            self.index_df.insert(0, 'accepted', -1)
+
         # # create figure and axis
         self.fig, self.axs = plt.subplots(2, 1, sharex = False, figsize=(8,8))
 
@@ -76,15 +76,16 @@ class matplotGui:
         self.axs[0].spines["right"].set_visible(False)
         self.axs[1].spines["top"].set_visible(False)
         self.axs[1].spines["right"].set_visible(False)
-            
+
         # create first plot
         self.plot_data()
         plt.show()
-        
+
         
     def get_index(self):
         """
-
+        Get dataframe index, reset when limits are exceeded
+        
         Returns
         -------
         None.
@@ -99,7 +100,19 @@ class matplotGui:
        
         # set counter to internal counter
         self.i = self.ind
+        
+    def set_background_color(self, axis =  [0,1]):
+        """
+        Set background color
 
+        Returns
+        -------
+        None.
+
+        """
+        clr = self.bcg_color[self.index_df['accepted'][self.i]]
+        for ax in axis:
+            self.axs[ax].set_facecolor(clr)
 
     def plot_data(self, **kwargs):
         """
@@ -143,36 +156,39 @@ class matplotGui:
         self.axs[1].fill_between(freq, psd+sem, psd-sem, color = 'orange', alpha=0.2)
         self.axs[1].set_ylim(np.min(psd), np.max(psd))
         
-        # add labels and background colors
-        self.axs[0].set_facecolor(self.index_df['facearray'][self.i]);
+        # format graphs
+        self.set_background_color()
         self.axs[0].legend(loc = 'upper right')
         self.axs[0].set_xlabel('Time (Seconds)')
         self.axs[0].set_ylabel('Mean Power')
-        self.axs[1].set_facecolor(self.index_df['facearray'][self.i]);
         self.axs[1].legend(['Outlier_threshold = {:.1f}'.format(self.outlier_threshold)], loc = 'upper right')
         self.axs[1].set_xlabel('Frequency (Hz)')
         self.axs[1].set_ylabel('Power (V^2/Hz)')
+
         plt.subplots_adjust(bottom=0.15)
         self.fig.suptitle('Select PSDs', fontsize=12)   
-        self.fig.text(0.9, 0.04, '**** KEY: Previous = <-, Next = ->, Accept = y, Reject = n, Accept all = a, Reject all = r ****' ,      # move/accept labels
+        self.fig.text(0.9, 0.04, '**** KEY: Previous = <-, Next = ->, Accept = a, Reject = r****' ,
                       ha="right", bbox=dict(boxstyle="square", ec=(1., 1., 1.), fc=(0.9, 0.9, 0.9),))
-        
-
         self.fig.canvas.callbacks.connect('key_press_event', self.keypress)
+        self.fig.canvas.callbacks.connect('close_event', self.close_event)
         plt.draw()
 
             
     def save_idx(self):
         """
         Saves accepted PSD index and mat files
+
         Returns
         -------
         None.
         """
 
         # check if all PSDs were verified
-        if np.any(self.index_df['accepted'] == -1) == True:
+        if np.any(self.index_df['accepted'] == -1):
             print('\n****** Some PSDs were not verified ******\n')
+            
+        # store index csv
+        self.index_df.to_csv(self.index_path, index = False)
             
         # get accepted PSDs
         accepted_idx = self.index_df['accepted'] == 1
@@ -180,7 +196,7 @@ class matplotGui:
         self.power_df = self.power_df[accepted_idx]
         
         # drop extra columns
-        self.index_df = self.index_df.drop(columns = ['accepted','facearray'])
+        self.index_df = self.index_df.drop(columns = ['accepted'])
         
         # reset index
         self.index_df.reset_index(drop = True, inplace = True)
@@ -193,10 +209,14 @@ class matplotGui:
         # save verified index and power_df file
         self.index_df.to_csv(self.index_verified_path, index = False)
         self.power_df.to_pickle(self.power_mat_verified_path)
-
+        
         print(f"Verified PSDs were saved in '{self.search_path}'.\n")  
         
-         
+    
+    ## ------  Cross press ------ ## 
+    def close_event(self, event):
+        self.save_idx()
+
     ## ------  Keyboard press ------ ##     
     def keypress(self, event):
 
@@ -216,16 +236,12 @@ class matplotGui:
             self.outlier_threshold -= 0.5
             self.plot_data() # plot
 
-        if event.key == 'y':
+        if event.key == 'a':
            # set values to arrays
-           self.index_df.at[self.i, 'facearray'] = 'palegreen'
            self.index_df.at[self.i, 'accepted'] = 1
-           
-           # change background color  
-           self.axs[0].set_facecolor('palegreen')
-           self.axs[1].set_facecolor('palegreen')
-           
+                    
            # draw and pause for user visualization
+           self.set_background_color()
            plt.draw()
            plt.pause(self.wait_time)
            
@@ -233,16 +249,12 @@ class matplotGui:
            self.ind += 1 # add one to class index
            self.plot_data() # plot
           
-        if event.key == 'n':
+        if event.key == 'r':
             # set values to arrays
-            self.index_df.at[self.i, 'facearray'] = 'salmon'
             self.index_df.at[self.i, 'accepted'] = 0
             
-            # change background color
-            self.axs[0].set_facecolor('salmon')
-            self.axs[1].set_facecolor('salmon')
-            
             # draw and pause for user visualization
+            self.set_background_color()
             plt.draw()
             plt.pause(self.wait_time)
             
@@ -250,60 +262,52 @@ class matplotGui:
             self.ind += 1 # add one to class index
             self.plot_data() # plot
             
-        if event.key == 'a':
+        if event.key == 'ctrl+a':
            # set values to arrays
-           self.index_df.at[:, 'facearray'] = 'palegreen'
            self.index_df.at[:, 'accepted'] = 1
            
-           # change background color  
-           self.axs[0].set_facecolor('palegreen')
-           self.axs[1].set_facecolor('palegreen')
-           
            # draw and pause for user visualization
+           self.set_background_color()
            plt.draw()
            plt.pause(self.wait_time)
 
-        if event.key == 'r':
+        if event.key == 'ctrl+r':
             # set values to arrays
-            self.index_df.at[:, 'facearray'] = 'salmon'
             self.index_df.at[:, 'accepted'] = 0
             
-            # change background color  
-            self.axs[0].set_facecolor('salmon')
-            self.axs[1].set_facecolor('salmon')
-            
             # draw and pause for user visualization
+            self.set_background_color()
             plt.draw()
             plt.pause(self.wait_time)
         
         if event.key == 'enter':
-            plt.close()
-            self.save_idx() # save file to csv
+            plt.close() # trigger close callback
             
             
 if __name__ == '__main__':
     import yaml,os
     import pandas as pd
     from load_index import load_index
-        # define path and conditions for filtering
-    filename = 'index.csv'
-    parent_folder = r'C:\Users\panton01\Desktop\pydsp_analysis'
-    path =  os.path.join(parent_folder, filename)
-    
-    # enter filter conditions
-    filter_conditions = {'brain_region':['bla', 'pfc'], 'treatment':['baseline','vehicle']} #
-    
+
+    parent_folder = r'X:\Alyssa\EtOH_paper\acute_raw_data\etoh'
+
     # define frequencies of interest
     with open('settings.yaml', 'r') as file:
         settings = yaml.load(file, Loader=yaml.FullLoader)
         
     settings.update({'outlier_threshold':5, 'outlier_window':11})
     
+    # get path to files
+    settings.update({'index_path': os.path.join(parent_folder, settings['file_index'])})
+    settings.update({'power_mat_path': os.path.join(parent_folder, settings['file_power_mat'])})
+    settings.update({'index_verified_path': os.path.join(parent_folder, settings['file_index_verified'])})
+    settings.update({'power_mat_verified_path': os.path.join(parent_folder, settings['file_power_mat_verified'])})
+    
     #### ---------------------------------------------------------------- ####
     
     # load index and power dataframe
-    index_df = load_index(path)
-    power_df = pd.read_pickle(r'C:\Users\panton01\Desktop\pydsp_analysis\power_mat.pickle')
+    index_df = load_index(os.path.join(parent_folder, settings['file_index']))
+    power_df = pd.read_pickle(os.path.join(parent_folder, settings['file_power_mat']))
        
     # pmat, outliers = remove_outliers(power_df['pmat'][0], 11, 5)
     callback = matplotGui(settings, index_df, power_df)
