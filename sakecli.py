@@ -66,7 +66,7 @@ def setpath(ctx, path):
     click.secho(f"\n -> Path was set to:'{path}'.\n", fg = 'green', bold = True)
 
 
-### ------------------------------ STFT ---------------------------------- ###  
+### ---------------------- SET NORMALIZE SETTINGS ------------------------- ###  
 @main.command()
 @click.option('--enable', type = str, help = 'Enable normalization')
 @click.option('--column', type = str, help = 'Category to normalize')
@@ -199,7 +199,7 @@ def plot(ctx, freq, plot_type, kind):
         # get power area
         data = melted_power_area(index_df, power_df, ctx.obj['freq_ranges'], categories)
         
-        # Graph interactive summary plot
+        # graph interactive summary plot
         GridGraph(ctx.obj['search_path'], ctx.obj['power_mat_verified_path'], data).draw_graph(ctx.obj['summary_plot_type'])
         return
     
@@ -208,7 +208,7 @@ def plot(ctx, freq, plot_type, kind):
         # get power ratio
         data = melted_power_ratio(index_df, power_df,  ctx.obj['freq_ratios'], categories)
         
-        # Graph interactive summary plot
+        # graph interactive summary plot
         GridGraph(ctx.obj['search_path'], ctx.obj['power_mat_verified_path'], data).draw_graph(ctx.obj['summary_plot_type'])
         return
     

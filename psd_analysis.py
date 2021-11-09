@@ -366,25 +366,22 @@ def norm_power(index_df, power_df, selection):
     unique_id = 'animal_id'
     category, group  = selection
 
-    # get number of unique groups and regions
-    unique_groups = len(index_df[category].unique())
+    # get number unique entries
+    unique_groups = index_df[category].unique()
     unique_regions = index_df['brain_region'].unique()
     unique_ids = index_df[unique_id].unique()
     
     # iterate over brain regions
     for region in unique_regions:
-        
-        # regions 
-        region_df = index_df[index_df['brain_region'] == region]
 
         # iterate over unique ids
         for uid in unique_ids:   
 
             # get matching idx
-            matching_entries = region_df[region_df[unique_id] == uid]
+            matching_entries = index_df[(index_df[unique_id] == uid) & (index_df['brain_region'] == region)]
     
             # drop groups that are not complete
-            if len(matching_entries) < unique_groups:
+            if len(matching_entries) < len(unique_groups):
                 power_df = power_df.drop(matching_entries.index, axis=0)
                 index_df = index_df.drop(matching_entries.index, axis=0)
             else:
