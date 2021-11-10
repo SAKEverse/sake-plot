@@ -68,14 +68,14 @@ def setpath(ctx, path):
 
 ### ---------------------- SET NORMALIZE SETTINGS ------------------------- ###  
 @main.command()
-@click.option('--enable', type = str, help = 'Enable normalization')
+@click.option('--enable', type = bool, help = 'Enable normalization')
 @click.option('--column', type = str, help = 'Category to normalize')
 @click.option('--group', type = str, help = 'Group to use for normalization')
 @click.pass_context
 def normalize(ctx, enable, column, group):
     """Update settings file with norm data""" 
-    
-    if bool(enable):
+
+    if enable:
         ctx.obj['settings']['normalize'] = 1
         ctx.obj['settings']['norm_groups'] = [column, group]
     else:
