@@ -10,6 +10,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import os
 import PyQt5
+from tidy_to_pzfx import tidy_to_grouped
 # mpl.use('TkAgg')
 
 class GridGraph:
@@ -113,11 +114,20 @@ class GridGraph:
             
             # add to a concatenated df
             all_data=pd.concat([all_data,cond_df],axis=1)
+        
+        
             
         # export to csv 
         save_path = os.path.join(self.path, self.filename.split(".")[0]+"_"+var1+"_"+var2+".csv")
         all_data.to_csv(save_path)
-        print("-> Exported to:" + str(save_path) + "\n")
+        print("-> Exported to:" + str(path) + "\n")
+        
+        #export to prism file
+        out=tidy_to_grouped(self.data[export_index],'freq',self.graph_value,pivot_params[1])
+        text_file = open(os.path.join(path,self.filename.split(".")[0]+"_"+var1+"_"+var2+".pzfx"), "w")
+        text_file.write(out)
+        text_file.close()
+        
 
     def make_interactive(self):
         cats=['X: ','Hue: ','Col: ','Row: ']
@@ -310,14 +320,14 @@ class GridGraph:
 
 
 if __name__ == '__main__':
-    path= r"C:\Users\gweiss01\Downloads\\"
+    path= r"C:\Users\Grant\Downloads\\"
     filename=r"melt_index.csv"
     data=pd.read_csv(os.path.join(path,filename),index_col=0)
-    data2=pd.read_csv(r"C:\Users\gweiss01\Downloads\melted_dist.csv",index_col=0)
+#    data2=pd.read_csv(r"C:\Users\gweiss01\Downloads\melted_dist.csv",index_col=0)
     
-    # graph=GridGraph(path,filename,data)
-    # graph.draw_graph('violin')
+    graph=GridGraph(path,filename,data)
+    graph.draw_graph('bar')
 
-    graph=GridGraph(path,filename,data2)
-    graph.draw_dist()
+#    graph=GridGraph(path,filename,data2)
+#    graph.draw_dist()
 
