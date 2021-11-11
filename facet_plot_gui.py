@@ -120,11 +120,11 @@ class GridGraph:
         # export to csv 
         save_path = os.path.join(self.path, self.filename.split(".")[0]+"_"+var1+"_"+var2+".csv")
         all_data.to_csv(save_path)
-        print("-> Exported to:" + str(path) + "\n")
+        print("-> Exported to:" + str(self.path) + "\n")
         
         #export to prism file
         out=tidy_to_grouped(self.data[export_index],'freq',self.graph_value,pivot_params[1])
-        text_file = open(os.path.join(path,self.filename.split(".")[0]+"_"+var1+"_"+var2+".pzfx"), "w")
+        text_file = open(os.path.join(self.path,self.filename.split(".")[0]+"_"+var1+"_"+var2+".pzfx"), "w")
         text_file.write(out)
         text_file.close()
         
