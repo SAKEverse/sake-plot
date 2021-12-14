@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Aug  6 10:56:55 2021
-
-@author: panton01
-"""
 
 ########## ------------------------------- IMPORTS ------------------------ ##########
 import numpy as np

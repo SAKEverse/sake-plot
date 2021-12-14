@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Aug 24 10:09:35 2021
-
-@author: gweiss01
-"""
 
 import numpy as np
 from numba import njit
