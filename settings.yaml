@@ -28,18 +28,18 @@ freq_ratios:
   - - 40
     - 70
 index_present: 1
-normalize: 0
-norm_groups:
-- treatment
-- baseline
 mains_noise:
 - 59
 - 61
+norm_groups:
+- treatment
+- baseline1
+normalize: 0
 outlier_threshold: 7
 outlier_window: 60
 power_area_mat: power_area.csv
 power_present: 1
 power_verified_present: 1
 psd_mat: psd.csv
-search_path: D:/Shared Temporary Data/example_files_sake
+search_path: //supercomputer1/Shared/example_files_sake
 summary_plot_type: violin

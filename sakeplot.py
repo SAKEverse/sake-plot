@@ -197,7 +197,9 @@ if __name__ == '__main__':
         ctx.obj['search_path']=""
     
     ui.pathEdit.setText(_translate("SAKEDSP", ctx.obj['search_path']))
-    ui.threshEdit.setText(_translate("SAKEDSP", str(ctx.obj['outlier_threshold'])))
+    ui.threshEdit.setText(_translate("SAKEDSP", str(ctx.obj['outlier_threshold'])))    
+    ui.checkBoxNorm.setChecked(ctx.obj['normalize'])
+    norm_changed()
     
     
     get_current_img()
