@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Oct 18 16:04:21 2021
 
-@author: SuperComputer1
-"""
 from sakeplot_ui import Ui_SAKEDSP
 import sys, os
 from PyQt5 import QtCore, QtWidgets, QtTest 

@@ -405,7 +405,7 @@ class _LinePlotter(_RelationalPlotter):
             return est.index, est, None
 
         if ci == "se":
-            se = grouped.std()/np.sqrt(len(grouped))
+            se = grouped.std()/np.sqrt(grouped.size())
             cis = pd.DataFrame(np.c_[est - se, est + se],
                                index=est.index,
                                columns=["low", "high"]).stack()
