@@ -116,15 +116,15 @@ class GridGraph:
             all_data=pd.concat([all_data,cond_df],axis=1)
         
         
-            
+        save_name=self.filename.split(".")[0]+"_"+var1+"_"+var2 +"_"+data['freq'].unique()[0]+'_through_'+data['freq'].unique()[-1]
         # export to csv 
-        save_path = os.path.join(self.path, self.filename.split(".")[0]+"_"+var1+"_"+var2+".csv")
+        save_path = os.path.join(self.path, save_name+".csv")
         all_data.to_csv(save_path)
         print("-> Exported to:" + str(self.path) + "\n")
         
         #export to prism file
         out=tidy_to_grouped(self.data[export_index],'freq',self.graph_value,pivot_params[1])
-        text_file = open(os.path.join(self.path,self.filename.split(".")[0]+"_"+var1+"_"+var2+".pzfx"), "w")
+        text_file = open(os.path.join(self.path,save_name+".pzfx"), "w")
         text_file.write(out)
         text_file.close()
         
@@ -320,7 +320,7 @@ class GridGraph:
 
 
 if __name__ == '__main__':
-    path= r"C:\Users\Grant\Downloads\\"
+    path= r"C:\Users\gweiss01\Downloads\\"
     filename=r"melt_index.csv"
     data=pd.read_csv(os.path.join(path,filename),index_col=0)
 #    data2=pd.read_csv(r"C:\Users\gweiss01\Downloads\melted_dist.csv",index_col=0)
