@@ -4,8 +4,33 @@ import matplotlib.pyplot as plt
 from stft import f_fill
 from outlier_detection import get_outliers
 from tqdm import tqdm
+from matplotlib.widgets import SpanSelector
+from PyQt5 import QtCore
 ### ----------------------------------------------------- ###
+## add span selector
+## selected segments will be highlighted and added to index column (column_name = trimmed regions)
+# eg.format 0 100 200 300 1500 1600 (start-stop-start-stop...)
+## at the end of verification drop the selected spans
 
+def find_nearest(array, values):
+    """
+    Find index of values in array.
+
+    Parameters
+    ----------
+    array : np.array to index
+    values : list/array values used to search array
+
+    Returns
+    -------
+    idx : array, index of values from array
+
+    """
+    array = np.asarray(array)
+    idx = np.zeros(len(values), dtype=int)
+    for i, value in enumerate(values):
+        idx[i] = int((np.abs(array - value)).argmin())
+    return idx
 
 def remove_outliers(pmat:np.ndarray, outlier_window, outlier_threshold):
     """
@@ -42,6 +67,26 @@ def remove_outliers(pmat:np.ndarray, outlier_window, outlier_threshold):
     
     return pmat, outliers
 
+def remove_regions(pmat, idx):
+    
+    for i in range(idx.shape[0]):
+        
+        # replace outliers with nans
+        pmat[:, idx[i,0]:idx[i,1]] = np.nan
+        
+    # fill with median value
+    row_med = np.nanmedian(pmat, axis=1)
+    
+    # find indices that you need to replace
+    inds = np.where(np.isnan(pmat))
+    pmat[inds] = np.nanmedian(pmat)
+    
+    # place row medians in the indices.
+    pmat[inds] = np.take(row_med, inds[0])
+    
+    return pmat
+    
+
 class matplotGui:
     """
         Matplotlib GUI for user seizure verification.
@@ -64,22 +109,26 @@ class matplotGui:
         self.index_df = index_df
         
         # if first time verifying initialize values
+        if 'time_rejected' not in self.index_df.columns:
+            self.index_df.insert(0, 'time_rejected', '')       
         if 'accepted' not in self.index_df.columns:
-            # self.index_df.insert(0, 'facearray', 'w')
             self.index_df.insert(0, 'accepted', -1)
 
-        # # create figure and axis
-        self.fig, self.axs = plt.subplots(2, 1, sharex = False, figsize=(8,8))
+        # create figure and axis
+        self.fig, self.axs = plt.subplots(2, 1, sharex=False, figsize=(8,8))
 
         # remove top and right axis
         self.axs[0].spines["top"].set_visible(False)
         self.axs[0].spines["right"].set_visible(False)
         self.axs[1].spines["top"].set_visible(False)
         self.axs[1].spines["right"].set_visible(False)
-
+        
+        # set useblit True on gtkagg for enhanced performance
+        _ = SpanSelector(self.axs[0], self.on_select, 'horizontal', useblit=True,
+            rectprops=dict(alpha=0.5, facecolor='tab:blue'))
+        
         # create first plot
         self.plot_data()
-        plt.show()
 
         
     def get_index(self):
@@ -133,9 +182,18 @@ class matplotGui:
         # get time plot
         time_plot = np.mean(pmat, axis = 0)
         t = np.arange(0, time_plot.shape[0], 1) * self.fft_overlap * self.fft_win
-        
+
         # plot time plot (before outlier removal)
-        self.axs[0].plot(t ,time_plot, color='black', label = self.index_df.index[self.i])
+        self.axs[0].plot(t, time_plot, color='black', label = self.index_df.index[self.i])
+        
+        # plot highlighted region (bad)
+        selected_span = np.array([int(s) for s in str.split(self.index_df.at[self.i, 'time_rejected']) if s.isdigit()])
+        idx = find_nearest(t, selected_span)
+        idx = np.reshape(idx, (int(len(idx)/2),2))
+        for i in range(idx.shape[0]):
+            y_bad_section = time_plot[idx[i, 0]:idx[i, 1]]
+            t_bad_section = t[idx[i, 0]:idx[i, 1]]
+            self.axs[0].plot(t_bad_section, y_bad_section, color='darkmagenta')
         
         # plot PSD (before outlier removal)
         psd = np.mean(pmat, axis = 1)
@@ -143,7 +201,8 @@ class matplotGui:
         self.axs[1].plot(freq, psd, color='black', linewidth=1.5, alpha=0.9, label = self.index_df.index[self.i])
         self.axs[1].fill_between(freq, psd+sem, psd-sem, color = 'black', alpha=0.2)
         
-        # remove outliers
+        # remove bad regions and outliers
+        pmat = remove_regions(pmat, idx)
         pmat, outliers = remove_outliers(pmat, self.outlier_window, self.outlier_threshold)
         
         # plot time plot (after outlier removal)
@@ -167,16 +226,23 @@ class matplotGui:
 
         plt.subplots_adjust(bottom=0.15)
         self.fig.suptitle('Select PSDs', fontsize=12)   
-        self.fig.text(0.9, 0.04, '**** KEY: Previous = <-, Next = ->, Accept = a, Reject = r****' ,
+        self.fig.text(0.9, 0.04, '** KEY: Previous = <-, Next = ->, Accept = a, Reject = r, Enter: Save, Esc:close(no Save) **' ,
                       ha="right", bbox=dict(boxstyle="square", ec=(1., 1., 1.), fc=(0.9, 0.9, 0.9),))
         self.fig.canvas.callbacks.connect('key_press_event', self.keypress)
         self.fig.canvas.callbacks.connect('close_event', self.close_event)
+        
+        # disable x button
+        win = plt.gcf().canvas.manager.window
+        win.setWindowFlags(win.windowFlags() | QtCore.Qt.CustomizeWindowHint)
+        win.setWindowFlags(win.windowFlags() & ~QtCore.Qt.WindowCloseButtonHint)
+                
         plt.draw()
+        plt.show()
 
             
     def save_idx(self):
         """
-        Saves accepted PSD index and mat files
+        Saves accepted PSD index and mat files.
 
         Returns
         -------
@@ -188,7 +254,7 @@ class matplotGui:
             print('\n****** Some PSDs were not verified ******\n')
             
         # store index csv
-        self.index_df.to_csv(self.index_path, index = False)
+        self.index_df.to_csv(self.index_path, index=False)
             
         # get accepted PSDs
         accepted_idx = self.index_df['accepted'] == 1
@@ -199,8 +265,8 @@ class matplotGui:
         self.index_df = self.index_df.drop(columns = ['accepted'])
         
         # reset index
-        self.index_df.reset_index(drop = True, inplace = True)
-        self.power_df.reset_index(drop = True, inplace = True)
+        self.index_df.reset_index(drop=True, inplace=True)
+        self.power_df.reset_index(drop=True, inplace=True)
         
         # remove outliers
         for i in tqdm(range(len(self.power_df))):
@@ -211,15 +277,43 @@ class matplotGui:
         self.power_df.to_pickle(self.power_mat_verified_path)
         
         print(f"Verified PSDs were saved in '{self.search_path}'.\n")  
+    
+    
+    ### ------ Span Select ------ ###
+    def on_select(self, xmin, xmax):
+        """
+        User Selection.
         
+        Parameters
+        ----------
+        xmin : float/int
+            Xmin-user selection.
+        xmax : float/int
+            Xmax-user selection.
+
+        """
+        
+        # pass to index
+        self.index_df.at[self.i, 'time_rejected'] += ' ' + str(int(xmin)) + ' '  + str(int(xmax))
+        
+        # highlight user selected region
+        self.plot_data()
+    
+    ### --- Clear highlighted region --- ###
+    def clear_traces(self):
+        
+        self.index_df.at[self.i, 'time_rejected'] = ''
+        
+        # highlight user selected region
+        self.plot_data()
     
     ## ------  Cross press ------ ## 
     def close_event(self, event):
-        self.save_idx()
+        plt.close()
 
     ## ------  Keyboard press ------ ##     
     def keypress(self, event):
-
+        # print(event.key)
         if event.key == 'right':
             self.ind += 1 # add one to class index
             self.plot_data() # plot
@@ -262,6 +356,9 @@ class matplotGui:
             self.ind += 1 # add one to class index
             self.plot_data() # plot
             
+        if event.key == 'c':
+            self.clear_traces()
+            
         if event.key == 'ctrl+a':
            # set values to arrays
            self.index_df.at[:, 'accepted'] = 1
@@ -279,10 +376,15 @@ class matplotGui:
             self.set_background_color()
             plt.draw()
             plt.pause(self.wait_time)
+            
+        if event.key == 'escape':
+              plt.close()
         
         if event.key == 'enter':
+            self.save_idx()
             plt.close() # trigger close callback
-            
+
+
             
 if __name__ == '__main__':
     import yaml,os
