@@ -152,13 +152,28 @@ class matplotGui:
         self.axs[0].spines["right"].set_visible(False)
         self.axs[1].spines["top"].set_visible(False)
         self.axs[1].spines["right"].set_visible(False)
+               
+        # create first plot
+        self.plot_data()
         
         # set useblit True on gtkagg for enhanced performance
         _ = SpanSelector(self.axs[0], self.on_select, 'horizontal', useblit=True,
             rectprops=dict(alpha=0.5, facecolor='tab:blue'))
         
-        # create first plot
-        self.plot_data()
+        # connect callbacks and add key legend 
+        plt.subplots_adjust(bottom=0.15)
+        self.fig.suptitle('Select PSDs', fontsize=12)   
+        self.fig.text(0.9, 0.04, '** KEY: Previous = <-, Next = ->, Accept = a, Reject = r, Enter: Save, Esc:close(no Save) **' ,
+                      ha="right", bbox=dict(boxstyle="square", ec=(1., 1., 1.), fc=(0.9, 0.9, 0.9),))
+        self.fig.canvas.callbacks.connect('key_press_event', self.keypress)
+        self.fig.canvas.callbacks.connect('close_event', self.close_event)
+        
+        # disable x button
+        win = plt.gcf().canvas.manager.window
+        win.setWindowFlags(win.windowFlags() | QtCore.Qt.CustomizeWindowHint)
+        win.setWindowFlags(win.windowFlags() & ~QtCore.Qt.WindowCloseButtonHint)
+
+        plt.show()
 
         
     def get_index(self):
@@ -272,22 +287,8 @@ class matplotGui:
         self.axs[1].legend(['Outlier_threshold = {:.1f}'.format(self.outlier_threshold)], loc = 'upper right')
         self.axs[1].set_xlabel('Frequency (Hz)')
         self.axs[1].set_ylabel('Power (V^2/Hz)')
-        
-        # connect callbacks and add key legend 
-        plt.subplots_adjust(bottom=0.15)
-        self.fig.suptitle('Select PSDs', fontsize=12)   
-        self.fig.text(0.9, 0.04, '** KEY: Previous = <-, Next = ->, Accept = a, Reject = r, Enter: Save, Esc:close(no Save) **' ,
-                      ha="right", bbox=dict(boxstyle="square", ec=(1., 1., 1.), fc=(0.9, 0.9, 0.9),))
-        self.fig.canvas.callbacks.connect('key_press_event', self.keypress)
-        self.fig.canvas.callbacks.connect('close_event', self.close_event)
-        
-        # disable x button
-        win = plt.gcf().canvas.manager.window
-        win.setWindowFlags(win.windowFlags() | QtCore.Qt.CustomizeWindowHint)
-        win.setWindowFlags(win.windowFlags() & ~QtCore.Qt.WindowCloseButtonHint)
-                
-        plt.draw()
-        plt.show()
+        self.fig.canvas.draw()
+       
 
             
     def save_idx(self):
