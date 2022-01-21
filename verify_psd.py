@@ -262,7 +262,7 @@ class matplotGui:
         sem = np.std(pmat, axis = 1) / np.sqrt(pmat.shape[1])
         self.axs[1].plot(freq, psd, color='orange', linewidth=1.5, alpha=0.9, label = self.index_df.index[self.i])
         self.axs[1].fill_between(freq, psd+sem, psd-sem, color = 'orange', alpha=0.2)
-        self.axs[1].set_ylim(np.min(psd), np.max(psd))
+        self.axs[1].set_ylim(np.min(psd), np.max(psd)*1.3)
         
         # format graphs
         self.set_background_color()
