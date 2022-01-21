@@ -7,10 +7,6 @@ from tqdm import tqdm
 from matplotlib.widgets import SpanSelector
 from PyQt5 import QtCore
 ### ----------------------------------------------------- ###
-## add span selector
-## selected segments will be highlighted and added to index column (column_name = trimmed regions)
-# eg.format 0 100 200 300 1500 1600 (start-stop-start-stop...)
-## at the end of verification drop the selected spans
 
 def find_nearest(array, values):
     """
@@ -32,9 +28,36 @@ def find_nearest(array, values):
         idx[i] = int((np.abs(array - value)).argmin())
     return idx
 
+def replace_nans_with_row_median(pmat):
+    """
+    Replace NaNs with row median.
+
+    Parameters
+    ----------
+    pmat : np.ndarray
+
+    Returns
+    -------
+    pmat : np.ndarray
+
+    """
+    
+    # find row median value
+    row_med = np.nanmedian(pmat, axis=1)
+    
+    # find indices that you need to replace
+    inds = np.where(np.isnan(pmat))
+    pmat[inds] = np.nanmedian(pmat)
+    
+    # place row medians in the indices.
+    pmat[inds] = np.take(row_med, inds[0])
+    
+    return pmat
+    
+
 def remove_outliers(pmat:np.ndarray, outlier_window, outlier_threshold):
     """
-    Remove outliers based on MAD
+    Remove outliers based on MAD.
 
     Parameters
     ----------
@@ -55,34 +78,35 @@ def remove_outliers(pmat:np.ndarray, outlier_window, outlier_threshold):
     # interpolate missing data
     pmat = f_fill(pmat, axis=1)
     
-    # fill with median value
-    row_med = np.nanmedian(pmat, axis=1)
-    
-    # find indices that you need to replace
-    inds = np.where(np.isnan(pmat))
-    pmat[inds] = np.nanmedian(pmat)
-    
-    # place row medians in the indices.
-    pmat[inds] = np.take(row_med, inds[0])
+    # replace nans row median value
+    pmat = replace_nans_with_row_median(pmat)
     
     return pmat, outliers
-
+        
 def remove_regions(pmat, idx):
+    """
+    Remove regions as indicated in index.
+
+    Parameters
+    ----------
+    pmat : np.ndarray
+    idx : 2d array (rows = regions, columns = (start,stop))
+
+    Returns
+    -------
+    pmat : np.ndarray
+
+    """
+    if np.sum(idx) == 0:
+        return pmat
     
     for i in range(idx.shape[0]):
         
         # replace outliers with nans
         pmat[:, idx[i,0]:idx[i,1]] = np.nan
         
-    # fill with median value
-    row_med = np.nanmedian(pmat, axis=1)
-    
-    # find indices that you need to replace
-    inds = np.where(np.isnan(pmat))
-    pmat[inds] = np.nanmedian(pmat)
-    
-    # place row medians in the indices.
-    pmat[inds] = np.take(row_med, inds[0])
+    # replace nans row median value
+    pmat = replace_nans_with_row_median(pmat)
     
     return pmat
     
@@ -113,7 +137,13 @@ class matplotGui:
             self.index_df.insert(0, 'time_rejected', '')       
         if 'accepted' not in self.index_df.columns:
             self.index_df.insert(0, 'accepted', -1)
-
+            
+        # replace nans with empty string
+        self.index_df['time_rejected'].fillna('', inplace=True)
+        
+        # create array to store remove index
+        self.remove_idx = np.zeros(len(self.index_df), dtype=object)
+        
         # create figure and axis
         self.fig, self.axs = plt.subplots(2, 1, sharex=False, figsize=(8,8))
 
@@ -149,6 +179,24 @@ class matplotGui:
        
         # set counter to internal counter
         self.i = self.ind
+        
+    def get_index_from_str(self, t):
+        """
+        Get index from string (whitespace sep).
+
+        Parameters
+        ----------
+        t : array, time
+
+        Returns
+        -------
+        idx : 2d array (rows = regions, columns = (start,stop))
+
+        """
+        selected_span = np.array([int(s) for s in str.split(self.index_df['time_rejected'][self.i]) if s.isdigit()])
+        idx = find_nearest(t, selected_span)
+        idx = np.reshape(idx, (int(len(idx)/2),2))
+        return idx
         
     def set_background_color(self, axis =  [0,1]):
         """
@@ -186,10 +234,11 @@ class matplotGui:
         # plot time plot (before outlier removal)
         self.axs[0].plot(t, time_plot, color='black', label = self.index_df.index[self.i])
         
+        # pass index to store array
+        idx = self.get_index_from_str(t)
+        self.remove_idx[self.i] = idx
+        
         # plot highlighted region (bad)
-        selected_span = np.array([int(s) for s in str.split(self.index_df.at[self.i, 'time_rejected']) if s.isdigit()])
-        idx = find_nearest(t, selected_span)
-        idx = np.reshape(idx, (int(len(idx)/2),2))
         for i in range(idx.shape[0]):
             y_bad_section = time_plot[idx[i, 0]:idx[i, 1]]
             t_bad_section = t[idx[i, 0]:idx[i, 1]]
@@ -223,7 +272,8 @@ class matplotGui:
         self.axs[1].legend(['Outlier_threshold = {:.1f}'.format(self.outlier_threshold)], loc = 'upper right')
         self.axs[1].set_xlabel('Frequency (Hz)')
         self.axs[1].set_ylabel('Power (V^2/Hz)')
-
+        
+        # connect callbacks and add key legend 
         plt.subplots_adjust(bottom=0.15)
         self.fig.suptitle('Select PSDs', fontsize=12)   
         self.fig.text(0.9, 0.04, '** KEY: Previous = <-, Next = ->, Accept = a, Reject = r, Enter: Save, Esc:close(no Save) **' ,
@@ -260,6 +310,7 @@ class matplotGui:
         accepted_idx = self.index_df['accepted'] == 1
         self.index_df = self.index_df[accepted_idx]
         self.power_df = self.power_df[accepted_idx]
+        self.remove_idx = self.remove_idx[accepted_idx]
         
         # drop extra columns
         self.index_df = self.index_df.drop(columns = ['accepted'])
@@ -268,9 +319,11 @@ class matplotGui:
         self.index_df.reset_index(drop=True, inplace=True)
         self.power_df.reset_index(drop=True, inplace=True)
         
-        # remove outliers
+        # remove outliers and bad regions
         for i in tqdm(range(len(self.power_df))):
-            self.power_df.at[i, 'pmat'], _ = remove_outliers(self.power_df['pmat'][i], self.outlier_window, self.outlier_threshold)
+            pmat = self.power_df['pmat'][i]
+            pmat = remove_regions(pmat, self.remove_idx[i])
+            self.power_df.at[i, 'pmat'], _ = remove_outliers(pmat, self.outlier_window, self.outlier_threshold)
         
         # save verified index and power_df file
         self.index_df.to_csv(self.index_verified_path, index = False)
@@ -282,7 +335,7 @@ class matplotGui:
     ### ------ Span Select ------ ###
     def on_select(self, xmin, xmax):
         """
-        User Selection.
+        User selection of x span.
         
         Parameters
         ----------
@@ -386,33 +439,33 @@ class matplotGui:
 
 
             
-if __name__ == '__main__':
-    import yaml,os
-    import pandas as pd
-    from load_index import load_index
+# if __name__ == '__main__':
+#     import yaml,os
+#     import pandas as pd
+#     from load_index import load_index
 
-    parent_folder = r'X:\Alyssa\EtOH_paper\acute_raw_data\etoh'
+#     parent_folder = r'X:\Alyssa\EtOH_paper\acute_raw_data\etoh'
 
-    # define frequencies of interest
-    with open('settings.yaml', 'r') as file:
-        settings = yaml.load(file, Loader=yaml.FullLoader)
+#     # define frequencies of interest
+#     with open('settings.yaml', 'r') as file:
+#         settings = yaml.load(file, Loader=yaml.FullLoader)
         
-    settings.update({'outlier_threshold':5, 'outlier_window':11})
+#     settings.update({'outlier_threshold':5, 'outlier_window':11})
     
-    # get path to files
-    settings.update({'index_path': os.path.join(parent_folder, settings['file_index'])})
-    settings.update({'power_mat_path': os.path.join(parent_folder, settings['file_power_mat'])})
-    settings.update({'index_verified_path': os.path.join(parent_folder, settings['file_index_verified'])})
-    settings.update({'power_mat_verified_path': os.path.join(parent_folder, settings['file_power_mat_verified'])})
+#     # get path to files
+#     settings.update({'index_path': os.path.join(parent_folder, settings['file_index'])})
+#     settings.update({'power_mat_path': os.path.join(parent_folder, settings['file_power_mat'])})
+#     settings.update({'index_verified_path': os.path.join(parent_folder, settings['file_index_verified'])})
+#     settings.update({'power_mat_verified_path': os.path.join(parent_folder, settings['file_power_mat_verified'])})
     
-    #### ---------------------------------------------------------------- ####
+#     #### ---------------------------------------------------------------- ####
     
-    # load index and power dataframe
-    index_df = load_index(os.path.join(parent_folder, settings['file_index']))
-    power_df = pd.read_pickle(os.path.join(parent_folder, settings['file_power_mat']))
+#     # load index and power dataframe
+#     index_df = load_index(os.path.join(parent_folder, settings['file_index']))
+#     power_df = pd.read_pickle(os.path.join(parent_folder, settings['file_power_mat']))
        
-    # pmat, outliers = remove_outliers(power_df['pmat'][0], 11, 5)
-    callback = matplotGui(settings, index_df, power_df)
+#     # pmat, outliers = remove_outliers(power_df['pmat'][0], 11, 5)
+#     callback = matplotGui(settings, index_df, power_df)
 
 
 
