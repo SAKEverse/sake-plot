@@ -163,8 +163,9 @@ class matplotGui:
         # connect callbacks and add key legend 
         plt.subplots_adjust(bottom=0.15)
         self.fig.suptitle('Select PSDs', fontsize=12)   
-        self.fig.text(0.9, 0.04, '** KEY: Previous = <-, Next = ->, Accept = a, Reject = r, Enter: Save, Esc:close(no Save) **' ,
-                      ha="right", bbox=dict(boxstyle="square", ec=(1., 1., 1.), fc=(0.9, 0.9, 0.9),))
+        self.fig.text(0.5, 0.04, '** Accept/Reject = a/r,         Previous/Next = \u2190/\u2192,         Increase/Decrease threshold = \u2191/\u2193 **\
+\n**     Clear Highlighted (rejected) Regions = c,         Enter = Save, Esc = Close(no Save)      **' ,
+                      ha="center", bbox=dict(boxstyle="square", ec=(1., 1., 1.), fc=(0.9, 0.9, 0.9),))
         self.fig.canvas.callbacks.connect('key_press_event', self.keypress)
         self.fig.canvas.callbacks.connect('close_event', self.close_event)
         
