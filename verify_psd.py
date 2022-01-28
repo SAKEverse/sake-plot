@@ -210,6 +210,7 @@ Increase/Decrease threshold = \u2191/\u2193 **\
         idx : 2d array (rows = regions, columns = (start,stop))
 
         """
+        
         selected_span = np.array([int(s) for s in str.split(self.index_df['time_rejected'][self.i]) if s.isdigit()])
         idx = find_nearest(t, selected_span)
         idx = np.reshape(idx, (int(len(idx)/2),2))
@@ -257,8 +258,8 @@ Increase/Decrease threshold = \u2191/\u2193 **\
         
         # plot highlighted region (bad)
         for i in range(idx.shape[0]):
-            y_bad_section = time_plot[idx[i, 0]:idx[i, 1]]
-            t_bad_section = t[idx[i, 0]:idx[i, 1]]
+            y_bad_section = time_plot[idx[i, 0]:idx[i, 1]+1]
+            t_bad_section = t[idx[i, 0]:idx[i, 1]+1]
             self.axs[0].plot(t_bad_section, y_bad_section, color='darkmagenta')
         
         # plot PSD (before outlier removal)
@@ -348,6 +349,10 @@ Increase/Decrease threshold = \u2191/\u2193 **\
             Xmax-user selection.
 
         """
+        
+        # do not allow values smaller than zero
+        if xmin < 0:
+            xmin = 0
         
         # pass to index
         self.index_df.at[self.i, 'time_rejected'] += ' ' + str(int(xmin)) + ' '  + str(int(xmax))
