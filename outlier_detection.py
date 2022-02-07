@@ -135,9 +135,11 @@ def fast_outliers(arr:np.ndarray, window:int, threshold:float) -> np.ndarray:
     outliers : np.ndarray
 
     '''
-
+    
+    if window > arr.shape[0]:
+        window = arr.shape[0]
     # first make a threshold index:
-        
+    
     # divide the array into windows by reshaping, then find the median of each window, this makes an array of size: original_len/window
     reshaped = pd.DataFrame(arr[:(arr.shape[0]//window)*window].reshape(-1,window))
     
