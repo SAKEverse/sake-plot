@@ -195,8 +195,11 @@ class Stft(Properties):
         """
         
         # get spectrogram
-        f, t, pmat = scipy_stft(input_wave, self.sampling_rate, nperseg=self.winsize, noverlap = self.fft_overlap_size)
-        
+        f, t, pmat = scipy_stft(input_wave, self.sampling_rate, 
+                                nperseg=self.winsize, 
+                                noverlap = self.fft_overlap_size,
+                                padded=False)
+
         # get real power
         pmat = np.square(np.abs(pmat[self.f_idx[0] : self.f_idx[1]+1,:]))
         
@@ -246,7 +249,7 @@ class Stft(Properties):
 
         """
 
-        # get stft
+        # get stft 
         freq, pmat = self.get_stft(input_wave)
 
         # remove mains nose
