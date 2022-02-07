@@ -116,7 +116,7 @@ class GridGraph:
             all_data=pd.concat([all_data,cond_df],axis=1)
         
         
-        save_name=self.filename.split(".")[0]+"_"+var1+"_"+var2 +"_"+self.data['freq'].unique()[0]+'_through_'+self.data['freq'].unique()[-1]
+        save_name=self.filename.split(".")[0]+"_"+var1+"_"+var2 +"_"+str(self.data['freq'].unique()[0])+'_through_'+str(self.data['freq'].unique()[-1])
         # export to csv 
         save_path = os.path.join(self.path, save_name+".csv")
         all_data.to_csv(save_path)
