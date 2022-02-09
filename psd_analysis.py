@@ -128,14 +128,15 @@ def get_pmat(index_df, properties):
     index_df = index_df.drop(['index'], axis = 1)
     
     # parallel PSD analysis
-    lst = tqdm(Parallel(n_jobs=njobs)(delayed(func)(idx, row, properties) for idx, row in index_df.iterrows()))
+    lst = tqdm(Parallel(n_jobs=njobs)(delayed(func)(idx, row, properties, index_df) for idx, row in index_df.iterrows()))
     power_df = pd.DataFrame(np.empty((len(index_df), 2)), columns = ['freq', 'pmat'], dtype = object)
     for i, freq, pmat in lst:
         power_df.at[i, 'freq'] = freq
         power_df.at[i, 'pmat'] = pmat
     return index_df, power_df
 
-def get_pmat_par(i, row, properties):
+def get_pmat_par(i, row, properties, index_df):
+    
     # get properties
     file_properties = index_df[AdiGet.input_parameters].loc[i].to_dict()
     file_properties.update({'search_path': properties['search_path']})
