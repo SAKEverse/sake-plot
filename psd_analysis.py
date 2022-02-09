@@ -7,6 +7,9 @@ from get_data import AdiGet
 from tqdm import tqdm
 from beartype import beartype
 from typing import TypeVar
+from joblib import Parallel, delayed
+import multiprocessing
+njobs= multiprocessing.cpu_count()-1
 PandasDf = TypeVar('pandas.core.frame.DataFrame')
 ########## ---------------------------------------------------------------- ##########
 
@@ -67,7 +70,7 @@ def get_power_ratio(pmat:np.ndarray, freq_vec:np.ndarray, freqs:np.ndarray) -> n
     return powers
         
 @beartype
-def get_pmat(index_df:PandasDf, properties:dict) -> tuple((PandasDf, PandasDf)):
+def get_pmat_single(index_df:PandasDf, properties:dict) -> tuple((PandasDf, PandasDf)):
     """
     Run Stft analysis on signals retrieved using rows of index_df.
 
@@ -88,7 +91,7 @@ def get_pmat(index_df:PandasDf, properties:dict) -> tuple((PandasDf, PandasDf)):
     index_df = index_df.dropna().reset_index()
     index_df = index_df.drop(['index'], axis = 1)
 
-    # create empty series dataframe
+    # create empty dataframe
     df = pd.DataFrame(np.empty((len(index_df), 2)), columns = ['freq', 'pmat'], dtype = object)
 
     for i in tqdm(range(len(index_df))): # iterate over dataframe
@@ -115,6 +118,46 @@ def get_pmat(index_df:PandasDf, properties:dict) -> tuple((PandasDf, PandasDf)):
         df.at[i, 'freq'], df.at[i, 'pmat'] = stft_obj.run_stft(signal)
     
     return index_df, df
+
+def get_pmat(index_df, properties):
+    func = get_pmat_par
+    
+    # drop rows containing NaNs after filling folder_path and animal_id
+    index_df[['folder_path', 'animal_id']] = index_df[['folder_path', 'animal_id']] .fillna('')
+    index_df = index_df.dropna().reset_index()
+    index_df = index_df.drop(['index'], axis = 1)
+    
+    # parallel PSD analysis
+    lst = tqdm(Parallel(n_jobs=njobs)(delayed(func)(idx, row, properties) for idx, row in index_df.iterrows()))
+    power_df = pd.DataFrame(np.empty((len(index_df), 2)), columns = ['freq', 'pmat'], dtype = object)
+    for i, freq, pmat in lst:
+        power_df.at[i, 'freq'] = freq
+        power_df.at[i, 'pmat'] = pmat
+    return index_df, power_df
+
+def get_pmat_par(i, row, properties):
+    # get properties
+    file_properties = index_df[AdiGet.input_parameters].loc[i].to_dict()
+    file_properties.update({'search_path': properties['search_path']})
+    
+    # get signal
+    signal = AdiGet(file_properties).get_data_adi()
+
+    # add sampling rate
+    properties.update({'sampling_rate':int(file_properties['sampling_rate'])})
+    
+    # Init Stft object with required properties
+    selected_keys = Properties.types.keys()
+    selected_keys = list(selected_keys)
+    
+    # select key-value pairs from dictionary
+    selected_properties = {x: properties[x] for x in selected_keys}
+    
+    # convert time series to frequency domain
+    stft_obj = Stft(selected_properties)
+    freq, pmat = stft_obj.run_stft(signal)
+
+    return i, freq, pmat
 
 
 def melted_power_area(index_df:PandasDf, power_df:PandasDf, freqs:list, selected_categories:list):
@@ -406,7 +449,7 @@ if __name__ == '__main__':
     ### ---------------------- USER INPUT -------------------------------- ###
     
     ## define path and conditions for filtering
-    parent_folder = r'X:\Alyssa\EtOH_paper\acute_raw_data\etoh'
+    parent_folder = r'\\SUPERCOMPUTER2\Shared\acute_allo'
 
     ## define frequencies of interest
     with open('settings.yaml', 'r') as file:
@@ -415,16 +458,16 @@ if __name__ == '__main__':
     ### ---------------------------------------------------------------- ####
     
     ## load data frame
-    index_df = load_index(os.path.join(parent_folder, 'index_verified.csv'))
+    index_df = load_index(os.path.join(parent_folder, 'index.csv'))
 
     # get power
-    # power_df = get_pmat(index_df, settings)    
+    _, power_df = get_pmat(index_df, settings)    
     # power_df.to_pickle(os.path.join(parent_folder, 'power_mat.pickle'))
     
-    power_df = pd.read_pickle(os.path.join(parent_folder, 'power_mat_verified.pickle'))
+    # power_df = pd.read_pickle(os.path.join(parent_folder, 'power_mat_verified.pickle'))
     
     # normalize to baseline
-    index_df, power_df = norm_power(index_df, power_df, ['treatment', 'baseline1'])
+    # index_df, power_df = norm_power(index_df, power_df, ['treatment', 'baseline1'])
     # df = melted_power_dist(index_df, power_df, [30,70], ['sex', 'treatment', 'brain_region'])
     
     # df = melted_power_ratio(index_df, power_df, settings['freq_ratios'], ['sex', 'treatment', 'brain_region']) #
@@ -432,8 +475,8 @@ if __name__ == '__main__':
     # import seaborn as sns
     
     # get melted power area
-    data = melted_power_area(index_df, power_df, settings['freq_ranges'], ['sex', 'treatment', 'brain_region'])
-    GridGraph(parent_folder, 'test.csv', data).draw_graph('box')
+    # data = melted_power_area(index_df, power_df, settings['freq_ranges'], ['sex', 'treatment', 'brain_region'])
+    # GridGraph(parent_folder, 'test.csv', data).draw_graph('box')
     
     # sns.catplot(data = df, x = 'freq', y = 'power_area', hue = 'treatment', col = 'sex', row = 'brain_region', kind = 'box')
     
