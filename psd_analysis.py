@@ -1,4 +1,5 @@
 ########## ------------------------------- IMPORTS ------------------------ ##########
+import sys
 import numpy as np
 import pandas as pd
 from stft import Stft, get_freq_index, Properties
@@ -128,7 +129,7 @@ def get_pmat(index_df, properties):
     index_df = index_df.drop(['index'], axis = 1)
     
     # parallel PSD analysis
-    lst = tqdm(Parallel(n_jobs=njobs)(delayed(func)(idx, row, properties, index_df) for idx, row in index_df.iterrows()))
+    lst = Parallel(n_jobs=njobs)(delayed(func)(idx, row, properties, index_df) for idx, row in index_df.iterrows())
     power_df = pd.DataFrame(np.empty((len(index_df), 2)), columns = ['freq', 'pmat'], dtype = object)
     for i, freq, pmat in lst:
         power_df.at[i, 'freq'] = freq
@@ -157,7 +158,8 @@ def get_pmat_par(i, row, properties, index_df):
     # convert time series to frequency domain
     stft_obj = Stft(selected_properties)
     freq, pmat = stft_obj.run_stft(signal)
-
+    print_str = '--> File ' + str(i+1) + '. Total:' + str(len(index_df)) +  '.\n'
+    print(print_str)
     return i, freq, pmat
 
 
