@@ -1,3 +1,6 @@
+exclude_categories:
+- cat1
+- cat2
 fft_freq_range:
 - 1
 - 150
@@ -41,5 +44,5 @@ power_area_mat: power_area.csv
 power_present: 1
 power_verified_present: 1
 psd_mat: psd.csv
-search_path: D:/Phil/Cohort 1
+search_path:
 summary_plot_type: violin

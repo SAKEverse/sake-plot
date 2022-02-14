@@ -194,6 +194,11 @@ def plot(ctx, freq, plot_type, kind):
     # get categories
     categories = list(index_df.columns[index_df.columns.get_loc('stop_time')+1:])
     
+    # remove unwanted categories from yaml file
+    for category in ctx.obj['exclude_categories']:
+        if category in categories:
+            categories.remove(category)
+    
     if plot_type == 'power_area':
         
         # get power area
