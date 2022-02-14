@@ -44,5 +44,5 @@ power_area_mat: power_area.csv
 power_present: 1
 power_verified_present: 1
 psd_mat: psd.csv
-search_path:
+search_path: ""
 summary_plot_type: violin
