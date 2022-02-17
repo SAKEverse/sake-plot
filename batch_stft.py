@@ -84,7 +84,7 @@ class BatchStft():
         if self.njobs == 1:
             lst = []
             for idx, row in self.index_df.iterrows():
-                lst.append(self.get_pmat_par(idx, row))  
+                lst.append(self.get_pmat(idx, row))  
         else:
             lst = Parallel(n_jobs=self.njobs)(delayed(self.get_pmat)(idx, row) for idx, row in self.index_df.iterrows())
             
@@ -178,7 +178,7 @@ if __name__ == '__main__':
     obj = BatchStft(properties, index_df, 1) 
     power_df = obj.get_pmat()
     # i=0
-    # obj.get_pmat_par(i, index_df.loc[0])
+    # obj.get_pmat(i, index_df.loc[0])
     
 
     
