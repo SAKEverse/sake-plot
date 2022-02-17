@@ -1,16 +1,11 @@
 ########## ------------------------------- IMPORTS ------------------------ ##########
-import sys
 import numpy as np
 import pandas as pd
-from stft import Stft, get_freq_index, Properties
+from stft import get_freq_index
 from scipy.stats import gaussian_kde
-from get_data import AdiGet
-from tqdm import tqdm
 from beartype import beartype
 from typing import TypeVar
-from joblib import Parallel, delayed
-import multiprocessing
-njobs= multiprocessing.cpu_count()-1
+
 PandasDf = TypeVar('pandas.core.frame.DataFrame')
 ########## ---------------------------------------------------------------- ##########
 
@@ -69,98 +64,6 @@ def get_power_ratio(pmat:np.ndarray, freq_vec:np.ndarray, freqs:np.ndarray) -> n
         powers[i] = np.divide(np.mean(pmat[freq_idx[i,0,0]:freq_idx[i,0,1],:]),
                               np.mean(pmat[freq_idx[i,1,0]:freq_idx[i,1,1],:]))                           
     return powers
-        
-@beartype
-def get_pmat_single(index_df:PandasDf, properties:dict) -> tuple((PandasDf, PandasDf)):
-    """
-    Run Stft analysis on signals retrieved using rows of index_df.
-
-    Parameters
-    ----------
-    index_df : PandasDf, experiment index
-    properties: Dict
-
-    Returns
-    -------
-    index_df: PandasDf, experiment index
-    power_df: PandasDf, with power matrix and frequency
-
-    """
-    
-    # drop rows containing NaNs after filling folder_path and animal_id
-    index_df[['folder_path', 'animal_id']] = index_df[['folder_path', 'animal_id']] .fillna('')
-    index_df = index_df.dropna().reset_index()
-    index_df = index_df.drop(['index'], axis = 1)
-
-    # create empty dataframe
-    df = pd.DataFrame(np.empty((len(index_df), 2)), columns = ['freq', 'pmat'], dtype = object)
-
-    for i in tqdm(range(len(index_df))): # iterate over dataframe
-        
-        # get properties
-        file_properties = index_df[AdiGet.input_parameters].loc[i].to_dict()
-        file_properties.update({'search_path': properties['search_path']})
-        
-        # get signal
-        signal = AdiGet(file_properties).get_data_adi()
-        
-        # add sampling rate
-        properties.update({'sampling_rate':int(file_properties['sampling_rate'])})
-        
-        # Init Stft object with required properties
-        selected_keys = Properties.types.keys()
-        selected_keys = list(selected_keys)
-        
-        # select key-value pairs from dictionary
-        selected_properties = {x: properties[x] for x in selected_keys}
-        
-        # convert time series to frequency domain
-        stft_obj = Stft(selected_properties)
-        df.at[i, 'freq'], df.at[i, 'pmat'] = stft_obj.run_stft(signal)
-    
-    return index_df, df
-
-def get_pmat(index_df, properties):
-    func = get_pmat_par
-    
-    # drop rows containing NaNs after filling folder_path and animal_id
-    index_df[['folder_path', 'animal_id']] = index_df[['folder_path', 'animal_id']] .fillna('')
-    index_df = index_df.dropna().reset_index()
-    index_df = index_df.drop(['index'], axis = 1)
-    
-    # parallel PSD analysis
-    lst = Parallel(n_jobs=njobs)(delayed(func)(idx, row, properties, index_df) for idx, row in index_df.iterrows())
-    power_df = pd.DataFrame(np.empty((len(index_df), 2)), columns = ['freq', 'pmat'], dtype = object)
-    for i, freq, pmat in lst:
-        power_df.at[i, 'freq'] = freq
-        power_df.at[i, 'pmat'] = pmat
-    return index_df, power_df
-
-def get_pmat_par(i, row, properties, index_df):
-    
-    # get properties
-    file_properties = index_df[AdiGet.input_parameters].loc[i].to_dict()
-    file_properties.update({'search_path': properties['search_path']})
-    
-    # get signal
-    signal = AdiGet(file_properties).get_data_adi()
-
-    # add sampling rate
-    properties.update({'sampling_rate':int(file_properties['sampling_rate'])})
-    
-    # Init Stft object with required properties
-    selected_keys = Properties.types.keys()
-    selected_keys = list(selected_keys)
-    
-    # select key-value pairs from dictionary
-    selected_properties = {x: properties[x] for x in selected_keys}
-    
-    # convert time series to frequency domain
-    stft_obj = Stft(selected_properties)
-    freq, pmat = stft_obj.run_stft(signal)
-    print_str = '--> File ' + str(i+1) + '. Total:' + str(len(index_df)) +  '.\n'
-    print(print_str)
-    return i, freq, pmat
 
 
 def melted_power_area(index_df:PandasDf, power_df:PandasDf, freqs:list, selected_categories:list):
@@ -464,7 +367,7 @@ if __name__ == '__main__':
     index_df = load_index(os.path.join(parent_folder, 'index.csv'))
 
     # get power
-    _, power_df = get_pmat(index_df, settings)    
+    # _, power_df = get_pmat(index_df, settings)    
     # power_df.to_pickle(os.path.join(parent_folder, 'power_mat.pickle'))
     
     # power_df = pd.read_pickle(os.path.join(parent_folder, 'power_mat_verified.pickle'))
