@@ -44,13 +44,13 @@ class AdiGet:
         # get values from dictionary
         for key, value in propeties.items():
                setattr(self, key, value)
-       
+
         # get load path
         self.file_path = os.path.join(self.search_path, self.folder_path, self.file_name)
 
 
     @beartype
-    def get_data_adi(self) -> np.ndarray: 
+    def get_data_adi(self, start=None, stop=None) -> np.ndarray: 
         """
         Get data from labchart channel object
 
@@ -65,7 +65,13 @@ class AdiGet:
         
         # get channel object
         ch_obj = fread.channels[self.channel_id]
-
+        
+        if start:
+            self.start_time = start
+            
+        if stop:
+            self.stop_time = stop
+            
         # do not allow start times less 1 than because adi toolbox malfunctions
         if self.start_time < 1:
             self.start_time = 1
