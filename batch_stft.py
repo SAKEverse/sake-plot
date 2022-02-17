@@ -3,7 +3,6 @@
 import numpy as np
 import pandas as pd
 from stft import Stft, Properties
-from tqdm import tqdm
 from get_data import AdiGet
 from typing import TypeVar
 from joblib import Parallel, delayed
@@ -42,17 +41,21 @@ class BatchStft():
     Batch analysis of stft signals using index from SAKE.
     """
     
-    def __init__(self, properties, index_df, njobs):
+    def __init__(self, properties, index_df, njobs=None):
         
         self.properties = properties
         self.index_df = index_df
-        self.njobs = njobs
         
         self.max_cpu_load = 0.8
         self.max_mem_load = 0.8
         
         # get cpu count
-        max_jobs = int(multiprocessing.cpu_count() * self.max_cpu_load)
+        max_jobs = int(np.floor(multiprocessing.cpu_count() * self.max_cpu_load))
+        if njobs:
+            self.njobs = njobs
+        else:
+            self.njobs = max_jobs
+            
         if njobs > max_jobs:
             self.njobs = max_jobs
         
@@ -66,7 +69,6 @@ class BatchStft():
         self.index_df = self.index_df.dropna().reset_index()
         self.index_df = self.index_df.drop(['index'], axis = 1)
         
-
     def get_pmat_batch(self):
         """
         Get power for each row of index_df.
@@ -90,8 +92,6 @@ class BatchStft():
             power_df.at[i, 'freq'] = freq
             power_df.at[i, 'pmat'] = pmat
         return power_df
-    
-    
     
     def get_pmat(self, i, row):
         """
