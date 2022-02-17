@@ -14,7 +14,7 @@ class SimSignal(Properties):
         self.time_duration = time_duration
         
         # create time vector
-        self.t = np.arange(0, self.time_duration, 1/self.sampling_rate);
+        self.t = np.arange(0, self.time_duration, 1/self.sampling_rate)
     
     def make_sine(self, freq:float, amp:float):
         return np.sin(freq*self.t*np.pi*2) * amp
