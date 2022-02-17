@@ -151,7 +151,8 @@ def stft(ctx, freq, njobs):
     
     # save index and power
     power_df.to_pickle(ctx.obj['power_mat_path'])
-    obj.index_df.to_csv(ctx.obj['index_path'], index = False)
+    if len(power_df)!=0:
+        obj.index_df.to_csv(ctx.obj['index_path'], index = False)
     
     # get freq_range for display
     freq_range = '-'.join(list(map(str, ctx.obj['fft_freq_range']))) + ' Hz'
