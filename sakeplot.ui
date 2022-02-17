@@ -308,7 +308,19 @@
      </widget>
     </item>
     <item row="3" column="2" colspan="2">
-     <widget class="QLineEdit" name="coresEdit"/>
+     <widget class="QLineEdit" name="coresEdit">
+      <property name="font">
+       <font>
+        <pointsize>12</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>4</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
     </item>
     <item row="3" column="1">
      <widget class="QLabel" name="labelCores">
