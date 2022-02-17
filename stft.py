@@ -147,15 +147,18 @@ class Stft(Properties):
 
         # pass parameters to object
         super().__init__(properties)
-        self.winsize = int(self.sampling_rate * self.fft_win)                      # window size (samples)  
-        self.fft_overlap_size = int(self.winsize * self.fft_overlap)    # fft_overlap size (samples)
-        self.f_idx = self.get_freq_idx(self.fft_freq_range)                 # get frequency index
+        self.winsize = int(self.sampling_rate * self.fft_win)                   # window size (samples)  
+        self.fft_overlap_size = int(self.winsize * self.fft_overlap)            # fft_overlap size (samples)
+        self.f_idx = self.get_freq_idx(self.fft_freq_range)                     # get frequency index
         
         # check that there are only two real numbers [lower, upper] limit within nyquist limit
         check_range_input(self.fft_freq_range, 0, self.sampling_rate/2)
         
         # check if mains noise is within user specified frequency range
         check_range_input(self.mains_noise, self.fft_freq_range[0], self.fft_freq_range[1])
+        
+        # get frequency range
+        self.f = np.arange(self.fft_freq_range[0], self.fft_freq_range[1] + (1/self.fft_win),  1/self.fft_win)
     
     @beartype
     def get_freq_idx(self, f:list) -> np.ndarray:
@@ -189,21 +192,20 @@ class Stft(Properties):
 
         Returns
         -------
-        f: 1D, frequency values
         power_matrix : 2D numpy array, rows = freq and columns = time bins
 
         """
         
-        # get spectrogram
-        f, t, pmat = scipy_stft(input_wave, self.sampling_rate, 
+        # get spectrogram # f, t, pmat =
+        _, _, pmat = scipy_stft(input_wave, self.sampling_rate, 
                                 nperseg=self.winsize, 
-                                noverlap = self.fft_overlap_size,
+                                noverlap=self.fft_overlap_size,
                                 padded=False)
 
         # get real power
         pmat = np.square(np.abs(pmat[self.f_idx[0] : self.f_idx[1]+1,:]))
         
-        return f[self.f_idx[0] : self.f_idx[1]+1], pmat
+        return pmat #f[self.f_idx[0] : self.f_idx[1]+1], 
 
     @beartype
     def remove_mains(self, freq:np.ndarray, pmat:np.ndarray) -> np.ndarray:
@@ -228,7 +230,7 @@ class Stft(Properties):
         pmat[f_idx[0]:f_idx[1]+1,:] = np.nan
 
         # fill NaNs
-        pmat = f_fill(pmat, axis = 0)
+        pmat = f_fill(pmat, axis=0)
 
         return pmat
     
@@ -250,12 +252,12 @@ class Stft(Properties):
         """
 
         # get stft 
-        freq, pmat = self.get_stft(input_wave)
+        pmat = self.get_stft(input_wave)
 
         # remove mains nose
-        pmat = self.remove_mains(freq, pmat)
+        pmat = self.remove_mains(self.f, pmat)
         
-        return freq, pmat
+        return pmat
         
         
         
