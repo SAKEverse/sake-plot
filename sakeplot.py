@@ -1,20 +1,18 @@
 # -*- coding: utf-8 -*-
 
+### ------------------------- IMPORTS ----------------------------- ###
 from sakeplot_ui import Ui_SAKEDSP
 import sys, os
 from PyQt5 import QtCore, QtWidgets, QtTest 
 from PyQt5.QtGui import QPixmap
-import yaml
 import subprocess
 import webbrowser
 import pandas as pd
-from verify_psd import matplotGui
-from psd_analysis import melted_power_area, melted_power_ratio, melted_psds
-from facet_plot_gui import GridGraph
-from psd_analysis import get_pmat
+from sakecli import main_check
+### --------------------------------------------------------------------- ###
 
 
-
+# init gui app
 app = QtWidgets.QApplication(sys.argv)
 Dialog = QtWidgets.QMainWindow()
 ui = Ui_SAKEDSP()
@@ -22,10 +20,9 @@ ui.setupUi(Dialog)
 Dialog.show()
 _translate = QtCore.QCoreApplication.translate
 script_dir=os.path.dirname(os.path.realpath(__file__))
-
-
 ui.plotType.addItems(['box','violin','boxen','bar','swarm','strip'])
 ui.plotValue.addItems(['Area','Ratio'])
+
 
 class ctx():
     obj={}
@@ -155,16 +152,14 @@ ui.actionSettings.triggered.connect(lambda:openSettings())
 
 def get_current_img():
     subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "checkpath"])
-    settings_path = 'settings.yaml'
     
-    with open(settings_path, 'r') as file:
-        ctx.obj = yaml.load(file, Loader=yaml.FullLoader)
-        
-    if ctx.obj['power_verified_present'] == 1:
+    ctx.obj = main_check(ctx)
+    
+    if os.path.isfile(ctx.obj['power_mat_verified_path']):
         img=r"images\bomb4.png"
-    elif ctx.obj['power_present'] == 1:
+    elif os.path.isfile(ctx.obj['power_mat_path']):
         img=r"images\bomb3.png"
-    elif ctx.obj['index_present'] == 1:
+    elif os.path.isfile(ctx.obj['index_path']):
         img=r"images\bomb2.png"
     else:
         img=r"images\bomb1.png"
@@ -184,20 +179,16 @@ def get_current_img():
 if __name__ == '__main__': 
 
     # define ctx.obj path
-    settings_path = 'settings.yaml'
-    
-    with open(settings_path, 'r') as file:
-        ctx.obj = yaml.load(file, Loader=yaml.FullLoader)
-    
+    ctx.obj = main_check(ctx)
+
     if not os.path.isdir(ctx.obj['search_path']):
         ctx.obj['search_path']=""
-    
+
     ui.pathEdit.setText(_translate("SAKEDSP", ctx.obj['search_path']))
     ui.threshEdit.setText(_translate("SAKEDSP", str(ctx.obj['outlier_threshold'])))    
     ui.checkBoxNorm.setChecked(ctx.obj['normalize'])
     norm_changed()
-    
-    
+
     get_current_img()
     app.exec_()
     
