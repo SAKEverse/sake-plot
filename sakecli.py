@@ -1,9 +1,57 @@
-########## ------------------------------- IMPORTS ------------------------ ##########
-import os, yaml, click
+####### -------------------------- IMPORTS ------------------------ ########
+import os
+import yaml
+import click
 import pandas as pd
 from filter_index import load_index
-########## ---------------------------------------------------------------- ##########
+settings_yaml = 'settings.yaml'
+load_path_yaml = 'path.yaml'
+######## ---------------------------------------------------------- ########
 
+def load_yaml(settings_path):
+    with open(settings_path, 'r') as file:
+        return yaml.load(file, Loader=yaml.FullLoader)
+
+def save_yaml(settings, settings_path):
+    with open(settings_path, 'w') as file:
+        yaml.dump(settings, file)
+        
+# define template settings path and load template settings
+temp_settings = load_yaml(settings_yaml)
+
+# if load path yaml does not exist create
+if not os.path.isfile(load_path_yaml):
+    save_yaml({'search_path':''}, load_path_yaml)
+######## ---------------------------------------------------------- ########
+        
+def main_check(ctx):
+    # get path and settings
+    path = load_yaml(load_path_yaml)
+    settings_path = os.path.join(path['search_path'], settings_yaml)
+    if not os.path.isfile(settings_path):
+        settings_path = settings_yaml 
+    settings = load_yaml(settings_path)
+    
+    # check if keys match otherwise load original settings
+    if settings.keys() != temp_settings.keys():
+        settings = temp_settings
+        
+    # set variables and pass to context
+    ctx.obj = settings.copy()
+        
+    # save original settings (keep separate from context)
+    ctx.obj.update({'settings': settings,
+                    'search_path': path['search_path'],
+                     'settings_path':settings_path}) 
+
+    # get path to files
+    paths = {'index_path': 'file_index', 'power_mat_path': 'file_power_mat',
+             'index_verified_path': 'file_index_verified',
+             'power_mat_verified_path': 'file_power_mat_verified'}
+    for file_path, file_name in paths.items():
+        ctx.obj.update({file_path: os.path.join(ctx.obj['search_path'], ctx.obj[file_name])})
+    return ctx.obj
+    
 
 @click.group()
 @click.pass_context
@@ -14,40 +62,13 @@ def main(ctx):
     ------------------------------------                                       
                                                                                                                                
     """
-    
-    # get settings and pass to context
-    with open(settings_path, 'r') as file:
-        settings = yaml.load(file, Loader=yaml.FullLoader)
-        settings.update({'index_present':0, 'power_present':0, 'power_verified_present':0})
-        ctx.obj = settings.copy()
-        
-    # save original settings
-    ctx.obj.update({'settings': settings}) 
+    ctx.obj = main_check(ctx)
 
-    # get path to files
-    ctx.obj.update({'index_path': os.path.join(ctx.obj['search_path'], ctx.obj['file_index'])})
-    ctx.obj.update({'power_mat_path': os.path.join(ctx.obj['search_path'], ctx.obj['file_power_mat'])})
-    ctx.obj.update({'index_verified_path': os.path.join(ctx.obj['search_path'], ctx.obj['file_index_verified'])})
-    ctx.obj.update({'power_mat_verified_path': os.path.join(ctx.obj['search_path'], ctx.obj['file_power_mat_verified'])})
-    
-    # check if index file is present and get full path
-    if os.path.isfile(ctx.obj['index_path']):
-        ctx.obj['settings'].update({'index_present':1})
-        
-    # check if power mat file is present and get full path
-    if os.path.isfile(ctx.obj['power_mat_path']):
-        ctx.obj['settings'].update({'power_present':1})
-        
-    # check if power mat file is present and get full path
-    if os.path.isfile(ctx.obj['power_mat_verified_path']):
-        ctx.obj['settings'].update({'power_verified_present':1})
-
-    with open(settings_path, 'w') as file:
-        yaml.dump(ctx.obj['settings'], file)
-
+  
 @main.command()
+# @click.pass_context ctx
 def checkpath():
-    """Reserved for gui use""" 
+    """Reserved for gui use (runs main with checks)""" 
     return
            
 ### ------------------------------ SET PATH ------------------------------ ### 
@@ -56,13 +77,18 @@ def checkpath():
 @click.pass_context
 def setpath(ctx, path):
     """Set path to index file parent directory"""    
-    # add path to original settings
-    ctx.obj['settings']['search_path'] = path
-
-    # write to file
-    with open(settings_path, 'w') as file:
-        yaml.dump(ctx.obj['settings'], file)
-        
+    # save new path and settings
+    save_yaml({'search_path':path}, load_path_yaml)
+    ctx.obj.update({'index_path': os.path.join(path, ctx.obj['file_index'])})
+    
+    # check for index file
+    if not os.path.isfile(ctx.obj['index_path']):
+        click.secho(f"\n --> File '{ctx.obj['file_index']}' "  +\
+                        f"was not found in '{ctx.obj['search_path']}'.\n",
+                        fg = 'yellow', bold = True)
+        return
+            
+    save_yaml(ctx.obj['settings'], os.path.join(path, settings_yaml))
     click.secho(f"\n -> Path was set to:'{path}'.\n", fg = 'green', bold = True)
 
 
@@ -81,52 +107,61 @@ def normalize(ctx, enable, column, group):
     else:
         ctx.obj['settings']['normalize'] = 0 
 
-    # write to file
-    with open(settings_path, 'w') as file:
-        yaml.dump(ctx.obj['settings'], file)
+    # write to file  
+    save_yaml(ctx.obj['settings'], ctx.obj['settings_path'])
     return
 
 
 ### ------------------------------ STFT ---------------------------------- ###     
 @main.command()
 @click.option('--freq', type = str, help = 'Enter frequency range, e.g. 1-30')
+@click.option('--njobs', type = str, help = 'Enter number of threads to use')
 @click.pass_context
-def stft(ctx, freq):
+def stft(ctx, freq, njobs):
     """Runs the Short-time Fourier Transform"""
-    from psd_analysis import get_pmat
+    from batch_stft import BatchStft
 
-    # check if index file was not found
-    if not ctx.obj['settings']['index_present']:
-        raise Exception(f"\n\n ---------> File '{ctx.obj['file_index']}' was not found in '{ctx.obj['search_path']}'. <---------\n")
-    
+    # check for index file
+    if not os.path.isfile(ctx.obj['index_path']):
+        click.secho(f"\n\n --> File '{ctx.obj['file_index']}' "  +\
+                        f"was not found in '{ctx.obj['search_path']}'.\n",
+                        fg = 'yellow', bold = True)
+        return
+
     # get frequency
     if freq is not None:
-        freq_range = [int(i) for i in freq.split('-')]
-        
+        freq_range = [int(i) for i in freq.split('-')]    
         if len(freq_range) !=2:
-              raise Exception(f"\n -> '{freq}' could not be parsed. Please use the following format: 1-30.\n")
+            
+            click.secho(f"\n -> '{freq}' could not be parsed."  +\
+                            "Please use the following format: 1-30.\n",
+                            fg = 'yellow', bold = True)
+            return
+        ctx.obj['fft_freq_range'] = freq_range
 
-    
     # load index 
     index_df = load_index(ctx.obj['index_path'])
                           
-    # get power 
-    index_df, power_df = get_pmat(index_df, ctx.obj)
+    # get power
+    obj = BatchStft(ctx.obj, index_df, 1)
+    power_df = obj.get_pmat_batch()
     
     # save index and power
     power_df.to_pickle(ctx.obj['power_mat_path'])
-    index_df.to_csv(ctx.obj['index_path'], index = False)
+    obj.index_df.to_csv(ctx.obj['index_path'], index = False)
     
     # get freq_range for display
     freq_range = '-'.join(list(map(str, ctx.obj['fft_freq_range']))) + ' Hz'
     
-    click.secho(f"\n -> Analysis completed: {freq_range} and file saved in:'{ctx.obj['search_path']}'.\n", fg = 'green', bold = True)
+    click.secho(f"\n -> Analysis completed: {freq_range} and" +\
+                f" file saved in:'{ctx.obj['search_path']}'.\n",
+                fg = 'green', bold = True)
 
 ### ------------------------------ VERIFY PSDs ---------------------------------- ###      
 @main.command()
 @click.option('--outlier_threshold', type = str, help = 'Enter outlier threshold, e.g. 4.5')
 @click.pass_context
-def verify(ctx, outlier_threshold): #, option
+def verify(ctx, outlier_threshold):
     """
     Manual verification of PSDs
     """
@@ -137,8 +172,11 @@ def verify(ctx, outlier_threshold): #, option
         ctx.obj.update({'outlier_threshold': float(outlier_threshold)})
 
     # check if index file was not found
-    if not ctx.obj['settings']['power_present']:
-        raise Exception(f"\n -> File '{ctx.obj['file_power_mat']}' was not found in '{ctx.obj['search_path']}'.\n") 
+    if not os.path.isfile(ctx.obj['power_mat_path']):
+            click.secho(f"\n -> File '{ctx.obj['file_power_mat']}' "  +\
+                            f"was not found in '{ctx.obj['search_path']}'.\n",
+                            fg = 'yellow', bold = True)
+            return
         
     # load files
     index_df = pd.read_csv(ctx.obj['index_path'])
@@ -161,13 +199,10 @@ def plot(ctx, freq, plot_type, kind):
     if kind is not None:
         ctx.obj.update({'summary_plot_type':kind})
     
-    from psd_analysis import norm_power, melted_power_area, melted_power_ratio, melted_psds, melted_power_dist
-    from facet_plot_gui import GridGraph
-    
-    # check if power mat exists
-    if not ctx.obj['settings']['power_present']:
-        click.secho(f"\n -> File '{ctx.obj['file_power_mat']}' was not found in '{ctx.obj['search_path']}'" + 
-                    "Need to run 'stft' before plotting.\n", fg = 'yellow', bold = True)
+    # check if power mat exists 
+    if not os.path.isfile(ctx.obj['power_mat_verified_path']):
+        click.secho(f"\n -> File '{ctx.obj['power_mat_verified_path']}' was not found in '{ctx.obj['search_path']}'" + 
+                    "Need to run 'stft' and 'verify' before plotting.\n", fg = 'yellow', bold = True)
         return
     
     # check if plot type is present in the correct format
@@ -182,6 +217,10 @@ def plot(ctx, freq, plot_type, kind):
         click.secho(f"\n -> Got'{plot_type}' instead of {plot_type_options}\n",
                     fg = 'yellow', bold = True)
         return
+    
+    from psd_analysis import norm_power, melted_power_area
+    from psd_analysis import melted_power_ratio, melted_psds, melted_power_dist
+    from facet_plot_gui import GridGraph
         
     # load index and power mat
     index_df = pd.read_csv(ctx.obj['index_verified_path'])
@@ -205,26 +244,34 @@ def plot(ctx, freq, plot_type, kind):
         data = melted_power_area(index_df, power_df, ctx.obj['freq_ranges'], categories)
         
         # graph interactive summary plot
-        GridGraph(ctx.obj['search_path'], ctx.obj['power_mat_verified_path'], data).draw_graph(ctx.obj['summary_plot_type'])
+        GridGraph(ctx.obj['search_path'], 
+                  ctx.obj['power_mat_verified_path'],
+                  data).draw_graph(ctx.obj['summary_plot_type'])
         return
     
     if plot_type == 'power_ratio':
         
         # get power ratio
-        data = melted_power_ratio(index_df, power_df,  ctx.obj['freq_ratios'], categories)
+        data = melted_power_ratio(index_df, power_df, ctx.obj['freq_ratios'], categories)
         
         # graph interactive summary plot
-        GridGraph(ctx.obj['search_path'], ctx.obj['power_mat_verified_path'], data).draw_graph(ctx.obj['summary_plot_type'])
+        GridGraph(ctx.obj['search_path'], 
+                  ctx.obj['power_mat_verified_path'], 
+                  data).draw_graph(ctx.obj['summary_plot_type'])
         return
     
     # get frequency
     if freq is not None:
         freq_range = [int(i) for i in freq.split('-')]
         if len(freq_range) !=2:
-              click.secho(f"\n -> '{freq}' could not be parsed. Please use the following format: 1-30.\n", fg = 'yellow', bold = True)
+              click.secho(f"\n -> '{freq}' could not be parsed." +\
+                          " Please use the following format: 1-30.\n", 
+                          fg = 'yellow', bold = True)
               return
     else:
-        click.secho("\n -> 'Missing argument 'freq'. Please use the following format: --freq 1-30.\n", fg = 'yellow', bold = True)
+        click.secho("\n -> 'Missing argument 'freq'. " +\
+                    "Please use the following format: --freq 1-30.\n",
+                    fg = 'yellow', bold = True)
         return
     
     if plot_type == 'psd':
@@ -245,12 +292,16 @@ def plot(ctx, freq, plot_type, kind):
         
         
 # Execute if module runs as main program
-if __name__ == '__main__': 
+if __name__ == '__main__':
     
-    # define settings path
-    settings_path = 'settings.yaml'
     # start
     main(obj={})
+
+    
+    
+    
+    
+    
     
     
     
