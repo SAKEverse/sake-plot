@@ -9,6 +9,7 @@ import subprocess
 import webbrowser
 import pandas as pd
 from sakecli import main_check
+import multiprocessing
 ### --------------------------------------------------------------------- ###
 
 
@@ -51,7 +52,7 @@ def stft():
     ui.errorBrowser.setText(_translate("SAKEDSP","Processing... Check Terminal for Progess Bar"))
     
     QtTest.QTest.qWait(100)
-    msg=subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "stft"])
+    msg=subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "stft", "--njobs",ui.coresEdit.text()])
     if msg.returncode != 0:
         ui.errorBrowser.setText(_translate("SAKEDSP","ERROR: Could not perform STFT... \nCheck terminal for errors..."))
         return
@@ -183,7 +184,8 @@ if __name__ == '__main__':
 
     if not os.path.isdir(ctx.obj['search_path']):
         ctx.obj['search_path']=""
-
+    
+    ui.coresEdit.setText(str(multiprocessing.cpu_count()-2))
     ui.pathEdit.setText(_translate("SAKEDSP", ctx.obj['search_path']))
     ui.threshEdit.setText(_translate("SAKEDSP", str(ctx.obj['outlier_threshold'])))    
     ui.checkBoxNorm.setChecked(ctx.obj['normalize'])
