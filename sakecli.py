@@ -143,7 +143,10 @@ def stft(ctx, freq, njobs):
     index_df = load_index(ctx.obj['index_path'])
                           
     # get power
-    obj = BatchStft(ctx.obj, index_df, 1)
+    if njobs:
+        njobs = int(njobs)
+
+    obj = BatchStft(ctx.obj, index_df, njobs)
     power_df = obj.get_pmat_batch()
     
     # save index and power
