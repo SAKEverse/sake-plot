@@ -244,6 +244,16 @@ Increase/Decrease threshold = \u2191/\u2193 **\
         # get pmat and freq
         pmat = self.power_df['pmat'][self.i].copy()
         freq = self.power_df['freq'][self.i].copy()
+
+        # downsample 
+        q = 1
+        size = 500
+        if pmat.shape[1] > size:
+            q = int(pmat.shape[1]/size)
+            max_len = pmat.shape[1]//q
+            pmat2 = pmat[:,:max_len]
+            pmat2 = pmat2.reshape((pmat.shape[0], int(max_len/q), q))
+            pmat = pmat2.mean(axis=2)
         
         # get time plot
         time_plot = np.mean(pmat, axis = 0)
@@ -254,7 +264,7 @@ Increase/Decrease threshold = \u2191/\u2193 **\
         
         # pass index to store array
         idx = self.get_index_from_str(t)
-        self.remove_idx[self.i] = idx
+        self.remove_idx[self.i] = idx*q
         
         # plot highlighted region (bad)
         for i in range(idx.shape[0]):
