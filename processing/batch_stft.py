@@ -81,6 +81,8 @@ class BatchStft():
         
         power_df = pd.DataFrame(np.empty((len(self.index_df), 2)), columns = ['freq', 'pmat'], dtype = object)
         
+        print('\n--> Processing with', self.njobs, 'thread(s):\n')
+        
         if self.njobs == 1:
             lst = []
             for idx, row in self.index_df.iterrows():
