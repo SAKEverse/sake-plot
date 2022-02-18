@@ -264,7 +264,7 @@ Increase/Decrease threshold = \u2191/\u2193 **\
         
         # pass index to store array
         idx = self.get_index_from_str(t)
-        self.remove_idx[self.i] = idx*q
+        self.remove_idx[self.i] = idx*q # added
         
         # plot highlighted region (bad)
         for i in range(idx.shape[0]):
