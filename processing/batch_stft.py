@@ -46,7 +46,7 @@ class BatchStft():
         self.index_df = index_df
         
         self.max_cpu_load = 0.8
-        self.max_mem_load = 0.8
+        self.max_mem_load = 0.1
         
         # get cpu count
         max_jobs = int(np.floor(multiprocessing.cpu_count() * self.max_cpu_load))
@@ -88,7 +88,7 @@ class BatchStft():
             for idx, row in self.index_df.iterrows():
                 lst.append(self.get_pmat(idx, row))  
         else:
-            lst = Parallel(n_jobs=self.njobs)(delayed(self.get_pmat)(idx, row) for idx, row in self.index_df.iterrows())
+            lst = Parallel(n_jobs=self.njobs, backend='loky')(delayed(self.get_pmat)(idx, row) for idx, row in self.index_df.iterrows())
             
         for i, freq, pmat in lst:
             power_df.at[i, 'freq'] = freq
