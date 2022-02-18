@@ -250,7 +250,7 @@ Increase/Decrease threshold = \u2191/\u2193 **\
         size = 500
         if pmat.shape[1] > size:
             q = int(pmat.shape[1]/size)
-            max_len = pmat.shape[1]//q
+            max_len = (pmat.shape[1]//q)*q
             pmat2 = pmat[:,:max_len]
             pmat2 = pmat2.reshape((pmat.shape[0], int(max_len/q), q))
             pmat = pmat2.mean(axis=2)
