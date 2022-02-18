@@ -1,11 +1,11 @@
 ### ---------------------- IMPORTS ---------------------- ###
 import numpy as np
 import matplotlib.pyplot as plt
-from stft import f_fill
-from outlier_detection import get_outliers
 from tqdm import tqdm
 from matplotlib.widgets import SpanSelector
 from PyQt5 import QtCore
+from processing.stft import f_fill
+from processing.outlier_detection import get_outliers
 ### ----------------------------------------------------- ###
 
 def find_nearest(array, values):

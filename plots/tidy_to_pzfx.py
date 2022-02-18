@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Nov 11 02:47:33 2021
 
-@author: Grant
-"""
-
-import pandas as pd
+##### ----------------------------- IMPORTS ----------------------------- #####
 import os
+import pandas as pd
+##### ------------------------------------------------------------------- #####
 
 head_string = '''<?xml version="1.0" encoding="UTF-8"?>
 <GraphPadPrismFile xmlns="http://graphpad.com/prism/Prism.htm" PrismXMLVersion="5.00">
@@ -117,9 +114,7 @@ def tidy_to_grouped(data,x,y,group):
     out_string= head_string + table_string + foot_string
     return out_string
     
-    
-    
-    
+  
 if __name__ == '__main__':
     path= r"C:\Users\Grant\Downloads"
     filename=r"melt_index.csv"

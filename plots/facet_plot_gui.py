@@ -1,20 +1,18 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Aug 10 14:53:48 2021
 
-@author: gweiss01
-"""
+########## ------------------------------- IMPORTS ------------------------ ##########
+import os
+import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
-import numpy as np
-import os
 import PyQt5
-from tidy_to_pzfx import tidy_to_grouped
+from plots.tidy_to_pzfx import tidy_to_grouped
 # mpl.use('TkAgg')
+########## ---------------------------------------------------------------- ##########
 
 class GridGraph:
-    def __init__(self,path,filename,data):
+    def __init__(self ,path, filename, data):
         """
         Creates an object that stores tidy data from .csv that can create a dynamic facet plot.
         First column must be individual index.
@@ -50,7 +48,7 @@ class GridGraph:
         PyQt5.QtCore.qInstallMessageHandler(self.handler)#supress the error message
         
 
-    def on_pick(self,event):
+    def on_pick(self, event):
         """
         Callback for clicking on graphs. Export data if title is clicked,
         and changes the category if graph parameter is clicked
@@ -150,7 +148,7 @@ class GridGraph:
         self.g.fig.canvas.callbacks.connect('pick_event', self.on_pick)
         plt.show()
     
-    def draw_graph(self,kind=None,params=None):
+    def draw_graph(self, kind=None, params=None):
         """
         
 
@@ -188,7 +186,7 @@ class GridGraph:
         self.g=sns.catplot(data = self.data, x = x, y = self.graph_value, hue = hue, col = col, row = row, kind = self.kind,height=height,aspect=6/4,ci=68)
         self.make_interactive()
     
-    def draw_psd(self,kind=False,params=None):
+    def draw_psd(self, kind=False, params=None):
         """
         
 
@@ -225,7 +223,7 @@ class GridGraph:
         self.g=sns.relplot(data = self.data, x = x, y = self.graph_value, hue = hue, col = col, row = row, height=2.5,aspect=6/4,kind='line',ci='se')
         self.make_interactive()
 
-    def draw_dist(self,params=None):
+    def draw_dist(self, params=None):
         """
         
 

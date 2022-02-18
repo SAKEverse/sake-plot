@@ -1,6 +1,6 @@
 ####----------------------- IMPORTS ------------------- ######
 import numpy as np
-from stft import get_freq_index, Stft, Properties
+from processing.stft import get_freq_index, Stft, Properties
 ####--------------------------------------------------- ######
 
 class SimSignal(Properties):

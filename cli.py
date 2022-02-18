@@ -3,7 +3,6 @@ import os
 import yaml
 import click
 import pandas as pd
-from filter_index import load_index
 settings_yaml = 'settings.yaml'
 load_path_yaml = 'path.yaml'
 ######## ---------------------------------------------------------- ########
@@ -25,6 +24,18 @@ if not os.path.isfile(load_path_yaml):
 ######## ---------------------------------------------------------- ########
         
 def main_check(ctx):
+    """
+    Check if files and settings are present.
+
+    Parameters
+    ----------
+    ctx : context class
+
+    Returns
+    -------
+    dict, with settings
+
+    """
     # get path and settings
     path = load_yaml(load_path_yaml)
     settings_path = os.path.join(path['search_path'], settings_yaml)
@@ -57,10 +68,19 @@ def main_check(ctx):
 @click.pass_context
 def main(ctx):
     """
-    ------------------------------------                                       
-    --------------- SAKE ---------------                                       
-    ------------------------------------                                       
-                                                                                                                               
+    
+ \b   ▄▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄▄  ▄    ▄  ▄▄▄▄▄▄▄▄▄▄▄                                                         
+ \b   ▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░▌  ▐░▌▐░░░░░░░░░░░▌                             
+ \b   ▐░█▀▀▀▀▀▀▀▀▀ ▐░█▀▀▀▀▀▀▀█░▌▐░▌ ▐░▌ ▐░█▀▀▀▀▀▀▀▀▀                              
+ \b   ▐░▌          ▐░▌       ▐░▌▐░▌▐░▌  ▐░▌                                       
+ \b   ▐░█▄▄▄▄▄▄▄▄▄ ▐░█▄▄▄▄▄▄▄█░▌▐░▌░▌   ▐░█▄▄▄▄▄▄▄▄▄                           
+ \b    ▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░░▌    ▐░░░░░░░░░░░▌                             
+ \b     ▀▀▀▀▀▀▀▀▀█░▌▐░█▀▀▀▀▀▀▀█░▌▐░▌░▌   ▐░█▀▀▀▀▀▀▀▀▀                              
+ \b             ▐░▌▐░▌       ▐░▌▐░▌▐░▌  ▐░▌                                       
+ \b    ▄▄▄▄▄▄▄▄▄█░▌▐░▌       ▐░▌▐░▌ ▐░▌ ▐░█▄▄▄▄▄▄▄▄▄                              
+ \b   ▐░░░░░░░░░░░▌▐░▌       ▐░▌▐░▌  ▐░▌▐░░░░░░░░░░░▌                             
+ \b    ▀▀▀▀▀▀▀▀▀▀▀  ▀         ▀  ▀    ▀  ▀▀▀▀▀▀▀▀▀▀▀                              
+                                                                   
     """
     ctx.obj = main_check(ctx)
 
@@ -108,7 +128,7 @@ def normalize(ctx, enable, column, group):
         ctx.obj['settings']['normalize'] = 0 
 
     # write to file  
-    save_yaml(ctx.obj['settings'], ctx.obj['settings_path'])
+    save_yaml(ctx.obj['settings'], os.path.join(ctx.obj['search_path'], settings_yaml))
     return
 
 
@@ -119,7 +139,6 @@ def normalize(ctx, enable, column, group):
 @click.pass_context
 def stft(ctx, freq, njobs):
     """Runs the Short-time Fourier Transform"""
-    from batch_stft import BatchStft
 
     # check for index file
     if not os.path.isfile(ctx.obj['index_path']):
@@ -138,14 +157,18 @@ def stft(ctx, freq, njobs):
                             fg = 'yellow', bold = True)
             return
         ctx.obj['fft_freq_range'] = freq_range
+        
+        
+    from processing.batch_stft import BatchStft
+    import pandas as pd
 
     # load index 
-    index_df = load_index(ctx.obj['index_path'])
+    index_df = pd.read_csv(ctx.obj['index_path'])
                           
     # get power
     if njobs:
         njobs = int(njobs)
-
+   
     obj = BatchStft(ctx.obj, index_df, njobs)
     power_df = obj.get_pmat_batch()
     
@@ -169,7 +192,6 @@ def verify(ctx, outlier_threshold):
     """
     Manual verification of PSDs
     """
-    from verify_psd import matplotGui
     
     # update outlier if present
     if outlier_threshold is not None:
@@ -181,6 +203,8 @@ def verify(ctx, outlier_threshold):
                             f"was not found in '{ctx.obj['search_path']}'.\n",
                             fg = 'yellow', bold = True)
             return
+    
+    from processing.verify_psd import matplotGui
         
     # load files
     index_df = pd.read_csv(ctx.obj['index_path'])
@@ -222,9 +246,9 @@ def plot(ctx, freq, plot_type, kind):
                     fg = 'yellow', bold = True)
         return
     
-    from psd_analysis import norm_power, melted_power_area
-    from psd_analysis import melted_power_ratio, melted_psds, melted_power_dist
-    from facet_plot_gui import GridGraph
+    from plots.psd_analysis import norm_power, melted_power_area
+    from plots.psd_analysis import melted_power_ratio, melted_psds, melted_power_dist
+    from plots.facet_plot_gui import GridGraph
         
     # load index and power mat
     index_df = pd.read_csv(ctx.obj['index_verified_path'])

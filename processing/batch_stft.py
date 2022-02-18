@@ -2,13 +2,12 @@
 ########## ------------------------------- IMPORTS ------------------------ ##########
 import numpy as np
 import pandas as pd
-from stft import Stft, Properties
-from get_data import AdiGet
-from typing import TypeVar
-from joblib import Parallel, delayed
 import multiprocessing
+from joblib import Parallel, delayed
 import psutil
-PandasDf = TypeVar('pandas.core.frame.DataFrame')
+from load.get_data import AdiGet
+from processing.stft import Stft, Properties
+
 ########## ---------------------------------------------------------------- ##########
 
 def rem_array(start, stop, div):
@@ -51,12 +50,13 @@ class BatchStft():
         
         # get cpu count
         max_jobs = int(np.floor(multiprocessing.cpu_count() * self.max_cpu_load))
+
         if njobs:
             self.njobs = njobs
         else:
             self.njobs = max_jobs
             
-        if njobs > max_jobs:
+        if self.njobs > max_jobs:
             self.njobs = max_jobs
         
         # get chunksize based on available memory and cpu count
@@ -65,9 +65,9 @@ class BatchStft():
         self.chunksize = int(mem/max_jobs/byte_per_sample)
         
         # drop rows containing NaNs after filling folder_path and animal_id
-        self.index_df[['folder_path', 'animal_id']] = self.index_df[['folder_path', 'animal_id']] .fillna('')
-        self.index_df = self.index_df.dropna().reset_index()
-        self.index_df = self.index_df.drop(['index'], axis = 1)
+        columns = ['folder_path', 'animal_id', 'time_rejected', 'accepted']
+        self.index_df[columns] = self.index_df[columns].fillna('')
+        self.index_df = self.index_df.dropna().reset_index(drop=True)
         
     def get_pmat_batch(self):
         """

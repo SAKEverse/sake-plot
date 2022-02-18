@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 
+####----------------------- IMPORTS ------------------- ######
 import numpy as np
 from numba import njit
 import pandas as pd
+####--------------------------------------------------- ######
 
 def mean_outliers(arr:np.ndarray, window:int, threshold:float) -> np.ndarray:
     '''

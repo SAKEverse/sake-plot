@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
 
-### ------------------------- IMPORTS ----------------------------- ###
-from sakeplot_ui import Ui_SAKEDSP
-import sys, os
-from PyQt5 import QtCore, QtWidgets, QtTest 
-from PyQt5.QtGui import QPixmap
+##### ----------------------------- IMPORTS ----------------------------- #####
+import os
+import sys
+import multiprocessing
 import subprocess
 import webbrowser
 import pandas as pd
-from sakecli import main_check
-import multiprocessing
-### --------------------------------------------------------------------- ###
+from PyQt5 import QtCore, QtWidgets, QtTest 
+from PyQt5.QtGui import QPixmap
+from gui.sakeplot_ui import Ui_SAKEDSP
+from cli import main_check
+##### ------------------------------------------------------------------- #####
 
 
 # init gui app
@@ -31,7 +32,6 @@ class ctx():
 def updateImage(path):
     ui.picLabel.setPixmap(QPixmap(path))
     ui.picLabel.setScaledContents(True)
-    
 
 def setpath():
     """Set path to index file parent directory"""    
@@ -39,7 +39,7 @@ def setpath():
     widget=QtWidgets.QFileDialog()
     path=widget.getExistingDirectory(None,_translate("SAKEDSP", 'Set path for index.csv'),ctx.obj['search_path'])
     ui.pathEdit.setText(_translate("SAKEDSP",path))
-    msg=subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "setpath", path],capture_output=True)
+    msg=subprocess.run(["python", os.path.join(script_dir,r"cli.py"), "setpath", path],capture_output=True)
     ui.errorBrowser.setText(_translate("SAKEDSP",str(msg.stdout.decode())))
     get_current_img()
     
@@ -52,7 +52,7 @@ def stft():
     ui.errorBrowser.setText(_translate("SAKEDSP","Processing... Check Terminal for Progess Bar"))
     
     QtTest.QTest.qWait(100)
-    msg=subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "stft", "--njobs",ui.coresEdit.text()])
+    msg=subprocess.run(["python", os.path.join(script_dir,r"cli.py"), "stft", "--njobs",ui.coresEdit.text()])
     if msg.returncode != 0:
         ui.errorBrowser.setText(_translate("SAKEDSP","ERROR: Could not perform STFT... \nCheck terminal for errors..."))
         return
@@ -67,7 +67,7 @@ ui.STFTButton.clicked.connect(lambda:stft())
 def plotPSD():
     """Enter plot menu"""
     freq_range= ui.PSDEdit.text()
-    msg=subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "plot", "--freq", freq_range, '--plot_type','psd'])
+    msg=subprocess.run(["python", os.path.join(script_dir,r"cli.py"), "plot", "--freq", freq_range, '--plot_type','psd'])
     if msg.returncode != 0:
         ui.errorBrowser.setText(_translate("SAKEDSP","Check Terminal for Errors"))
 
@@ -75,10 +75,10 @@ ui.PSDButton.clicked.connect(lambda:plotPSD())
 
 def plotPower():
     if ui.plotValue.currentText() == 'Area':
-        msg=subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "plot", '--plot_type','power_area','--kind',ui.plotType.currentText()])
+        msg=subprocess.run(["python", os.path.join(script_dir,r"cli.py"), "plot", '--plot_type','power_area','--kind',ui.plotType.currentText()])
     
     if ui.plotValue.currentText() == 'Ratio':
-        msg=subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "plot", '--plot_type','power_ratio','--kind',ui.plotType.currentText()])
+        msg=subprocess.run(["python", os.path.join(script_dir,r"cli.py"), "plot", '--plot_type','power_ratio','--kind',ui.plotType.currentText()])
         
     if msg.returncode != 0:
         ui.errorBrowser.setText(_translate("SAKEDSP","Check Terminal for Errors"))
@@ -90,7 +90,7 @@ ui.PowerAreaButton.clicked.connect(lambda:plotPower())
 def plotDist():
     """Enter plot menu"""
     freq_range= ui.distEdit.text()
-    msg=subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "plot", "--freq", freq_range, '--plot_type','dist'])
+    msg=subprocess.run(["python", os.path.join(script_dir,r"cli.py"), "plot", "--freq", freq_range, '--plot_type','dist'])
     if msg.returncode != 0:
         ui.errorBrowser.setText(_translate("SAKEDSP","Check Terminal for Errors"))
     
@@ -106,7 +106,7 @@ def verify():
     #update threshold
     threshold= ui.threshEdit.text()
 
-    msg=subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "verify", "--outlier_threshold", threshold])
+    msg=subprocess.run(["python", os.path.join(script_dir,r"cli.py"), "verify", "--outlier_threshold", threshold])
     
     if msg.returncode != 0:
         ui.errorBrowser.setText(_translate("SAKEDSP",'ERROR: Unable to verify... \nCheck terminal for errors'))
@@ -124,9 +124,9 @@ def norm_changed():
     """
     
     if ui.checkBoxNorm.isChecked():
-        subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "normalize", "--enable", "true", "--column", ui.normCol.currentText(), "--group", ui.normGroup.currentText()])
+        subprocess.run(["python", os.path.join(script_dir,r"cli.py"), "normalize", "--enable", "true", "--column", ui.normCol.currentText(), "--group", ui.normGroup.currentText()])
     else:
-        subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "normalize", "--enable", "false", "--column", ui.normCol.currentText(), "--group", ui.normGroup.currentText()])
+        subprocess.run(["python", os.path.join(script_dir,r"cli.py"), "normalize", "--enable", "false", "--column", ui.normCol.currentText(), "--group", ui.normGroup.currentText()])
         
     
 ui.checkBoxNorm.stateChanged.connect(lambda:norm_changed())
@@ -147,12 +147,12 @@ ui.normCol.activated.connect(lambda:norm_col_changed())
 ui.normGroup.activated.connect(lambda:norm_changed())
 
 def openSettings():
-    webbrowser.open(os.path.join(script_dir,r"settings.yaml"))
+    webbrowser.open(os.path.join(script_dir, os.path.join(ctx.obj['search_path'],r"cli.py")))
     
 ui.actionSettings.triggered.connect(lambda:openSettings())
 
 def get_current_img():
-    subprocess.run(["python", os.path.join(script_dir,r"sakecli.py"), "checkpath"])
+    subprocess.run(["python", os.path.join(script_dir,r"cli.py"), "checkpath"])
     
     ctx.obj = main_check(ctx)
     

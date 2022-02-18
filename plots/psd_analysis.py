@@ -1,18 +1,17 @@
 ########## ------------------------------- IMPORTS ------------------------ ##########
 import numpy as np
 import pandas as pd
-from stft import get_freq_index
 from scipy.stats import gaussian_kde
 from beartype import beartype
 from typing import TypeVar
-
 PandasDf = TypeVar('pandas.core.frame.DataFrame')
+from processing.stft import get_freq_index
 ########## ---------------------------------------------------------------- ##########
 
 @beartype
 def get_power_area(pmat:np.ndarray, freq_vec:np.ndarray, freqs:np.ndarray) -> np.ndarray:
     """
-    Get power area across frequencies
+    Get power area across frequencies.
 
     Parameters
     ----------
@@ -40,7 +39,7 @@ def get_power_area(pmat:np.ndarray, freq_vec:np.ndarray, freqs:np.ndarray) -> np
 @beartype
 def get_power_ratio(pmat:np.ndarray, freq_vec:np.ndarray, freqs:np.ndarray) -> np.ndarray:
     """
-    Get power ratio across frequencies
+    Get power ratio across frequencies.
 
     Parameters
     ----------
@@ -347,10 +346,10 @@ def norm_power(index_df, power_df, selection):
     
 
 if __name__ == '__main__':
-    x = 1
+    
     import os, yaml
     from load_index import load_index
-    from facet_plot_gui import GridGraph
+    # from facet_plot_gui import GridGraph
     
     ### ---------------------- USER INPUT -------------------------------- ###
     
