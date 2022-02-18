@@ -185,7 +185,7 @@ if __name__ == '__main__':
     if not os.path.isdir(ctx.obj['search_path']):
         ctx.obj['search_path']=""
     
-    ui.coresEdit.setText(str(multiprocessing.cpu_count()-2))
+    ui.coresEdit.setText(str(int(multiprocessing.cpu_count()*.8)))
     ui.pathEdit.setText(_translate("SAKEDSP", ctx.obj['search_path']))
     ui.threshEdit.setText(_translate("SAKEDSP", str(ctx.obj['outlier_threshold'])))    
     ui.checkBoxNorm.setChecked(ctx.obj['normalize'])
