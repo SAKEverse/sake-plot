@@ -245,10 +245,6 @@ def plot(ctx, freq, plot_type, kind):
         click.secho(f"\n -> Got'{plot_type}' instead of {plot_type_options}\n",
                     fg = 'yellow', bold = True)
         return
-    
-    from plots.psd_analysis import norm_power, melted_power_area
-    from plots.psd_analysis import melted_power_ratio, melted_psds, melted_power_dist
-    from plots.facet_plot_gui import GridGraph
         
     # load index and power mat
     index_df = pd.read_csv(ctx.obj['index_verified_path'])
@@ -256,7 +252,11 @@ def plot(ctx, freq, plot_type, kind):
     
     # normalize psds based on condition
     if bool(ctx.obj['settings']['normalize']):
-         index_df, power_df = norm_power(index_df, power_df, ctx.obj['settings']['norm_groups'])
+        from plots.psd_analysis import norm_power, norm_total_power
+        if 'transform' == ctx.obj['settings']['norm_groups'][0]:
+            power_df = norm_total_power(power_df)
+        else:
+            index_df, power_df = norm_power(index_df, power_df, ctx.obj['settings']['norm_groups'])
     
     # get categories
     categories = list(index_df.columns[index_df.columns.get_loc('stop_time')+1:])
@@ -266,8 +266,9 @@ def plot(ctx, freq, plot_type, kind):
         if category in categories:
             categories.remove(category)
     
+    from plots.facet_plot_gui import GridGraph
     if plot_type == 'power_area':
-        
+        from plots.psd_analysis import melted_power_area
         # get power area
         data = melted_power_area(index_df, power_df, ctx.obj['freq_ranges'], categories)
         
@@ -278,7 +279,7 @@ def plot(ctx, freq, plot_type, kind):
         return
     
     if plot_type == 'power_ratio':
-        
+        from plots.psd_analysis import melted_power_ratio
         # get power ratio
         data = melted_power_ratio(index_df, power_df, ctx.obj['freq_ratios'], categories)
         
@@ -303,7 +304,7 @@ def plot(ctx, freq, plot_type, kind):
         return
     
     if plot_type == 'psd':
-
+        from plots.psd_analysis import melted_psds
         # get psd data
         psd_data = melted_psds(index_df, power_df, freq_range, categories)
         
@@ -311,7 +312,7 @@ def plot(ctx, freq, plot_type, kind):
         GridGraph(ctx.obj['search_path'],  ctx.obj['psd_mat'], psd_data).draw_psd()
         
     if plot_type == 'dist':
-
+        from plots.psd_analysis import melted_power_dist
         # get psd data
         pdf_data = melted_power_dist(index_df, power_df, freq_range, categories)
 

@@ -341,8 +341,25 @@ def norm_power(index_df, power_df, selection):
                 for i in matching_entries.index:
                     power_df.at[i, 'pmat'] = power_df['pmat'][i] / base_psd[:,None]
 
-    return index_df.reset_index().drop(['index'], axis = 1), power_df.reset_index().drop(['index'], axis = 1)
-        
+    return index_df.reset_index().drop(['index'], axis=1), power_df.reset_index().drop(['index'], axis=1)
+
+
+def norm_total_power(power_df):
+    """
+    Normalize based on total power.
+
+    Parameters
+    ----------
+    power_df : PandasDf, contains pmat and frequency vectors for every row of index_df
+
+    Returns
+    -------
+    power_df : PandasDf, contains pmat and frequency vectors for every row of index_df
+
+    """
+    power_df['pmat'] = power_df['pmat'].apply(lambda pmat: pmat/np.mean(pmat))
+
+    return power_df
     
 
 if __name__ == '__main__':
