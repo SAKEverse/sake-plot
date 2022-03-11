@@ -138,7 +138,10 @@ def norm_col_changed():
     try:
         index=pd.read_csv(os.path.join(ctx.obj['search_path'],'index.csv'))
         ui.normGroup.clear()
-        ui.normGroup.addItems(index[ui.normCol.currentText()].unique())
+        if ui.normCol.currentText() == 'transform':
+            ui.normGroup.addItems(['total_power'])
+        else:
+            ui.normGroup.addItems(index[ui.normCol.currentText()].unique())
         norm_changed()
     except:pass
         
@@ -172,8 +175,8 @@ def get_current_img():
         ui.normCol.clear()
         ui.normGroup.clear()
         index=pd.read_csv(os.path.join(ctx.obj['search_path'],'index.csv'))
-        ui.normCol.addItems(list(index.columns)[list(index.columns).index('stop_time')+1:-1])
-        ui.normGroup.addItems(index[ui.normCol.currentText()].unique())
+        ui.normCol.addItems(['transform']+list(index.columns)[list(index.columns).index('stop_time')+1:-1])
+        norm_col_changed()
     except:pass
 
 # Execute if module runs as main program
