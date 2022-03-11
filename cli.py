@@ -252,9 +252,9 @@ def plot(ctx, freq, plot_type, kind):
     
     # normalize psds based on condition
     if bool(ctx.obj['settings']['normalize']):
-        from plots.psd_analysis import norm_power, norm_total_power
+        from plots.psd_analysis import norm_power, norm_mean_power
         if 'transform' == ctx.obj['settings']['norm_groups'][0]:
-            power_df = norm_total_power(power_df)
+            power_df = norm_mean_power(power_df)
         else:
             index_df, power_df = norm_power(index_df, power_df, ctx.obj['settings']['norm_groups'])
     

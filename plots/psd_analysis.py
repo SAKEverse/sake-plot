@@ -344,9 +344,9 @@ def norm_power(index_df, power_df, selection):
     return index_df.reset_index().drop(['index'], axis=1), power_df.reset_index().drop(['index'], axis=1)
 
 
-def norm_total_power(power_df):
+def norm_mean_power(power_df):
     """
-    Normalize based on total power.
+    Normalize based on mean power.
 
     Parameters
     ----------
