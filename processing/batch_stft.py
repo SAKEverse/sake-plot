@@ -65,7 +65,10 @@ class BatchStft():
         self.chunksize = int(mem/max_jobs/byte_per_sample)
         
         # drop rows containing NaNs after filling folder_path and animal_id
-        columns = ['folder_path', 'animal_id', 'time_rejected', 'accepted']
+        verified_cols = ['time_rejected', 'accepted']
+        columns = ['folder_path', 'animal_id']
+        if verified_cols in self.index_df.columns:
+            columns += verified_cols
         self.index_df[columns] = self.index_df[columns].fillna('')
         self.index_df = self.index_df.dropna().reset_index(drop=True)
         
