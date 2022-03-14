@@ -67,7 +67,7 @@ class BatchStft():
         # drop rows containing NaNs after filling folder_path and animal_id
         verified_cols = ['time_rejected', 'accepted']
         columns = ['folder_path', 'animal_id']
-        if verified_cols in self.index_df.columns:
+        if set(self.index_df.columns).issubset(verified_cols):
             columns += verified_cols
         self.index_df[columns] = self.index_df[columns].fillna('')
         self.index_df = self.index_df.dropna().reset_index(drop=True)
