@@ -150,7 +150,7 @@ ui.normCol.activated.connect(lambda:norm_col_changed())
 ui.normGroup.activated.connect(lambda:norm_changed())
 
 def openSettings():
-    webbrowser.open(os.path.join(script_dir, os.path.join(ctx.obj['search_path'],r"cli.py")))
+    webbrowser.open(os.path.join(script_dir, os.path.join(ctx.obj['search_path'],r"settings.yaml")))
     
 ui.actionSettings.triggered.connect(lambda:openSettings())
 
