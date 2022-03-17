@@ -172,7 +172,7 @@ def fast_outliers(arr:np.ndarray, window:int, threshold:float) -> np.ndarray:
 def get_outliers(arr:np.ndarray, window:int, threshold:float) -> np.ndarray:
     
     # remove large outliers
-    thresh = 2*np.std(arr) + np.mean(arr)
+    thresh = 4*np.std(arr) + np.mean(arr)
     outliers1 = arr>thresh
     new_median = np.median(arr[arr<thresh])
     arr[outliers1] = new_median
