@@ -4,10 +4,12 @@ import numpy as np
 import pandas as pd
 import multiprocessing
 from joblib import Parallel, delayed
+import contextlib
+import joblib
+from tqdm import tqdm
 import psutil
 from load.get_data import AdiGet
 from processing.stft import Stft, Properties
-
 ########## ---------------------------------------------------------------- ##########
 
 def rem_array(start, stop, div):
@@ -35,6 +37,23 @@ def rem_array(start, stop, div):
         idx_array = np.append(idx_array, stop)
     return idx_array
 
+@contextlib.contextmanager
+def tqdm_joblib(tqdm_object):
+    """Context manager to patch joblib to report into tqdm progress bar given as argument"""
+
+    def tqdm_print_progress(self):
+        if self.n_completed_tasks > tqdm_object.n:
+            n_completed = self.n_completed_tasks - tqdm_object.n
+            tqdm_object.update(n=n_completed)
+
+    original_print_progress = joblib.parallel.Parallel.print_progress
+    joblib.parallel.Parallel.print_progress = tqdm_print_progress
+    try:
+        yield tqdm_object
+    finally:
+        joblib.parallel.Parallel.print_progress = original_print_progress
+        tqdm_object.close()
+
 class BatchStft():
     """
     Batch analysis of stft signals using index from SAKE.
@@ -44,7 +63,7 @@ class BatchStft():
         
         self.properties = properties
         self.index_df = index_df
-        
+
         self.max_cpu_load = 0.8
         self.max_mem_load = 0.1
         
@@ -67,7 +86,8 @@ class BatchStft():
         # drop rows containing NaNs after filling folder_path and animal_id
         verified_cols = ['time_rejected', 'accepted']
         columns = ['folder_path', 'animal_id']
-        if set(self.index_df.columns).issubset(verified_cols):
+
+        if set(verified_cols).issubset(self.index_df.columns):
             columns += verified_cols
         self.index_df[columns] = self.index_df[columns].fillna('')
         self.index_df = self.index_df.dropna().reset_index(drop=True)
@@ -85,13 +105,14 @@ class BatchStft():
         power_df = pd.DataFrame(np.empty((len(self.index_df), 2)), columns = ['freq', 'pmat'], dtype = object)
         
         print('\n--> Processing with', self.njobs, 'thread(s):\n')
-        
+
         if self.njobs == 1:
             lst = []
             for idx, row in self.index_df.iterrows():
-                lst.append(self.get_pmat(idx, row))  
+                lst.append(self.get_pmat(idx, row))
         else:
-            lst = Parallel(n_jobs=self.njobs, backend='loky')(delayed(self.get_pmat)(idx, row) for idx, row in self.index_df.iterrows())
+            with tqdm_joblib(tqdm(desc='Extracting Power', total=len(self.index_df))) as progress_bar:  # NOQA
+                lst = Parallel(n_jobs=self.njobs, backend='loky')(delayed(self.get_pmat)(idx, row) for idx, row in self.index_df.iterrows())
             
         for i, freq, pmat in lst:
             power_df.at[i, 'freq'] = freq
@@ -152,7 +173,7 @@ class BatchStft():
             pmat = np.concatenate((pmat, pmat_temp),axis=1)
         pmat = np.concatenate((pmat, pmat_temp[:,-1:]),axis=1)
 
-        print('--> Analyzed File - ' + str(i+1) + '. Total:' + str(len(self.index_df)) +  '.\n')
+        # print('--> Analyzed File - ' + str(i+1) + '. Total:' + str(len(self.index_df)) +  '.\n')
         return i, freq, pmat
     
     
