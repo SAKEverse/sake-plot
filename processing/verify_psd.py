@@ -47,7 +47,6 @@ def replace_nans_with_row_median(pmat):
     
     # find indices that you need to replace
     inds = np.where(np.isnan(pmat))
-    pmat[inds] = np.nanmedian(pmat)
     
     # place row medians in the indices.
     pmat[inds] = np.take(row_med, inds[0])
