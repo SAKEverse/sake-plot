@@ -251,12 +251,16 @@ def plot(ctx, freq, plot_type, kind):
     power_df = pd.read_pickle(ctx.obj['power_mat_verified_path'])  
     
     # normalize psds based on condition
-    if bool(ctx.obj['settings']['normalize']):
-        from plots.psd_analysis import norm_power, norm_mean_power
+    if ctx.obj['settings']['normalize']:
+        from plots.psd_analysis import norm_power, norm_power_unpaired, norm_mean_power
+        norm_func = norm_power
+    if not ctx.obj['settings']['paired']:
+        norm_func = norm_power_unpaired
+        
         if 'transform' == ctx.obj['settings']['norm_groups'][0]:
             power_df = norm_mean_power(power_df)
         else:
-            index_df, power_df = norm_power(index_df, power_df, ctx.obj['settings']['norm_groups'])
+            index_df, power_df = norm_func(index_df, power_df, ctx.obj['settings']['norm_groups'])
     
     # get categories
     categories = list(index_df.columns[index_df.columns.get_loc('stop_time')+1:])

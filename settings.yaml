@@ -43,3 +43,4 @@ power_area_mat: power_area.csv
 psd_mat: psd.csv
 settigs_path: settings.yaml
 summary_plot_type: violin
+paired: 1

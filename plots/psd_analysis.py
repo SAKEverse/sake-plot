@@ -344,6 +344,57 @@ def norm_power(index_df, power_df, selection):
     return index_df.reset_index().drop(['index'], axis=1), power_df.reset_index().drop(['index'], axis=1)
 
 
+
+def norm_power_unpaired(index_df, power_df, selection):
+    """
+    Normalize power by PSDs of selected condition, drop non matching conditions
+
+    Parameters
+    ----------
+    index_df : PandasDf, experiment index
+    power_df : PandasDf, contains pmat and frequency vectors for every row of index_df
+    selection : List/Tuple, (column name, baseline group)
+
+    Returns
+    -------
+    index_df : PandasDf, with dropped indices where conditions are missing
+    power_df : PandasDf, with dropped indices where conditions are missing
+    
+    """
+
+    unique_id = 'animal_id'
+    category, group  = selection
+
+    # get number unique entries
+    unique_groups = index_df[category].unique()
+    unique_regions = index_df['brain_region'].unique()
+    unique_ids = index_df[unique_id].unique()
+    
+    # iterate over brain regions
+    for region in unique_regions:
+
+        # iterate over unique ids
+        for uid in unique_ids:   
+
+            # get matching idx
+            matching_entries = index_df[(index_df[unique_id] == uid) & (index_df['brain_region'] == region)]
+    
+            # drop groups that are not complete
+            if (matching_entries[category] == group).sum() == 0:
+                power_df = power_df.drop(matching_entries.index, axis=0)
+                index_df = index_df.drop(matching_entries.index, axis=0)
+            else:
+                # get baseline psd
+                base_idx = matching_entries[matching_entries[category] == group].index[0]
+                base_psd = np.mean(power_df.pmat[base_idx], axis=1)
+                
+                # divide matching groups by baseline psd
+                for i in matching_entries.index:
+                    power_df.at[i, 'pmat'] = power_df['pmat'][i] / base_psd[:,None]
+
+    return index_df.reset_index().drop(['index'], axis=1), power_df.reset_index().drop(['index'], axis=1)
+
+
 def norm_mean_power(power_df):
     """
     Normalize based on mean power.
