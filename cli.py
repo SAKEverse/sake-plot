@@ -254,8 +254,9 @@ def plot(ctx, freq, plot_type, kind):
     if ctx.obj['settings']['normalize']:
         from plots.psd_analysis import norm_power, norm_power_unpaired, norm_mean_power
         norm_func = norm_power
-    if not ctx.obj['settings']['paired']:
-        norm_func = norm_power_unpaired
+        
+        if not ctx.obj['settings']['paired']:
+            norm_func = norm_power_unpaired
         
         if 'transform' == ctx.obj['settings']['norm_groups'][0]:
             power_df = norm_mean_power(power_df)
