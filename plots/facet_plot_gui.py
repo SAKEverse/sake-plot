@@ -7,29 +7,32 @@ import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 import PyQt5
-from plots.tidy_to_pzfx import tidy_to_grouped
+from tidy_to_pzfx import tidy_to_grouped
 # mpl.use('TkAgg')
 ########## ---------------------------------------------------------------- ##########
 
 class GridGraph:
-    def __init__(self ,path, filename, data):
+    def __init__(self ,path, filename, data, x='freq',y=None):
         """
         Creates an object that stores tidy data from .csv that can create a dynamic facet plot.
         First column must be individual index.
-        Last comlumn must be the values to graph (y-axis).
+        Last column will be the values to graph (y-axis) unless specified with y argument.
         Middle columns can contain any number of categories.
 
         Parameters
         ----------
         path : str, Full path of the directory containing the data to be graphed.
-        filename : str, name of the .csv file to export. 
-        
+        filename : str, name of the .csv file to export.
+        data: dataframe of tidy data to graph
+        x: col name for x axis, defaults to 'freq'
+        y: col name for y axis, defaults to the last column
         
         Returns
         -------
         None.
 
         """
+
         self.kind='box'
         self.first_time=True
         self.g=None
@@ -37,12 +40,22 @@ class GridGraph:
         self.path=path
         self.filename=filename
         self.data = data
-        #get the categories from the columns (exceptt the last one)
+        #get the categories from the columns 
         
-        self.param_list=list(self.data.columns[:-1])
-        #the last column is the value to graph
+        self.param_list=list(self.data.columns)
+        # Y defaults to the last column is the value to graph
+        if y in self.data.columns:
+            self.graph_value = y
+        else:
+            self.graph_value = self.data.columns[-1]
+        self.param_list.remove(self.graph_value)
         
-        self.graph_value = self.data.columns[-1]
+        if x in self.param_list:
+            self.x=x
+        else:
+            raise Exception('"{}" not found in data!'.format(x))
+            
+            
         
 
         PyQt5.QtCore.qInstallMessageHandler(self.handler)#supress the error message
@@ -105,7 +118,7 @@ class GridGraph:
             
             # melt the table by the first category, creating a separate table for each var in the second category
             cond_df=filtered.pivot(columns=self.pivot_params[0],values=self.graph_value)
-            cond_df=cond_df[self.data['freq'].unique()]
+            cond_df=cond_df[self.data[self.x].unique()]
             cond_df = cond_df.transpose()
 
             cond_df.columns = [cond+str(col) for col in cond_df.columns]
@@ -114,14 +127,14 @@ class GridGraph:
             all_data=pd.concat([all_data,cond_df],axis=1)
         
         
-        save_name=self.filename.split(".")[0]+"_"+var1+"_"+var2 +"_"+str(self.data['freq'].unique()[0])+'_through_'+str(self.data['freq'].unique()[-1])
+        save_name=self.filename.split(".")[0]+"_"+var1+"_"+var2 +"_"+str(self.data[self.x].unique()[0])+'_through_'+str(self.data[self.x].unique()[-1])
         # export to csv 
         save_path = os.path.join(self.path, save_name+".csv")
         all_data.to_csv(save_path)
         print("-> Exported to:" + str(self.path) + "\n")
         
         #export to prism file
-        out=tidy_to_grouped(self.data[export_index],'freq',self.graph_value,pivot_params[1])
+        out=tidy_to_grouped(self.data[export_index],self.x,self.graph_value,pivot_params[1])
         text_file = open(os.path.join(self.path,save_name+".pzfx"), "w")
         text_file.write(out)
         text_file.close()
@@ -146,6 +159,8 @@ class GridGraph:
             plt.figtext(.4,.97,"Click to export",fontsize=12,fontweight='bold',picker=5)
         #add the click callback to the figure
         self.g.fig.canvas.callbacks.connect('pick_event', self.on_pick)
+        for ax in self.g.axes.flatten():
+            ax.set_xticklabels(ax.get_xticklabels(), rotation=20)
         plt.show()
     
     def draw_graph(self, kind=None, params=None):
@@ -165,8 +180,8 @@ class GridGraph:
 
         """
         #swtich the freuency to the first value (X)
-        self.param_list.remove('freq')
-        self.param_list = ['freq'] + self.param_list
+        self.param_list.remove(self.x)
+        self.param_list = [self.x] + self.param_list
         self.pivot_params=self.param_list
         
         self.type="self.draw_graph()"
@@ -203,12 +218,12 @@ class GridGraph:
 
         """
         #swtich the freuency to the first value (X)
-        self.param_list.remove('freq')
-        self.param_list = ['freq'] + self.param_list
+        self.param_list.remove(self.x)
+        self.param_list = [self.x] + self.param_list
         self.pivot_params=self.param_list
         
         self.type="self.draw_psd()"
-        # first pram stays 'freq', sets up to 3 other params
+        # first pram stays self.x, sets up to 3 other params
         if kind: self.kind=kind
         if params != None: self.param_list[1:] = params
         if len(self.param_list) > 4:
